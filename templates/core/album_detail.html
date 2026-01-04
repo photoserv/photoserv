@@ -39,7 +39,14 @@ Album: {{ object }}
                 </tr>
                 <tr>
                     <th>Sort Mode</th>
-                    <td>{{ object.get_sort_method_display }}</td>
+                    <td>
+                        {{ object.get_sort_method_display }}
+                        {% if object.sort_descending %}
+                            (Descending)
+                        {% else %}
+                            (Ascending)
+                        {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <th>Parent Album</th>

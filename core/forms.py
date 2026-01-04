@@ -156,6 +156,10 @@ class AlbumForm(forms.ModelForm):
         required=False,
         label="Parent Album"
     )
+    sort_descending = forms.BooleanField(
+        required=False,
+        initial=True
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -265,7 +265,8 @@ class Album(PublicEntity):
             qs = qs.filter(_published=True)
 
         if self.sort_method == self.DefaultSortMethod.MANUAL:
-            order_by = "photoinalbum__order"
+            # Do not apply ascending/descending for manual sort
+            return qs.order_by("photoinalbum__order")
         elif self.sort_method == self.DefaultSortMethod.CREATED:
             order_by = "metadata__capture_date"
         elif self.sort_method == self.DefaultSortMethod.PUBLISHED:

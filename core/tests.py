@@ -297,6 +297,116 @@ class AlbumTests(TestCase):
         ordered = list(self.album.get_ordered_photos())
         self.assertEqual(ordered[0], photo2)
     
+    def test_get_ordered_photos_published_ascending(self):
+        """Test that photos are sorted by publish_date in ascending order"""
+        photo1 = Photo.objects.create(title="P1", raw_image="1.jpg", publish_date=timezone.now() - timezone.timedelta(days=2))
+        photo2 = Photo.objects.create(title="P2", raw_image="2.jpg", publish_date=timezone.now() - timezone.timedelta(days=1))
+        photo3 = Photo.objects.create(title="P3", raw_image="3.jpg", publish_date=timezone.now())
+        
+        PhotoInAlbum.objects.create(album=self.album, photo=photo3, order=1)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo1, order=2)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=3)
+
+        self.album.sort_method = Album.DefaultSortMethod.PUBLISHED
+        self.album.sort_descending = False
+        ordered = list(self.album.get_ordered_photos())
+        
+        self.assertEqual(len(ordered), 3)
+        self.assertEqual(ordered[0], photo1)  # oldest first
+        self.assertEqual(ordered[1], photo2)
+        self.assertEqual(ordered[2], photo3)  # newest last
+    
+    def test_get_ordered_photos_published_descending(self):
+        """Test that photos are sorted by publish_date in descending order"""
+        photo1 = Photo.objects.create(title="P1", raw_image="1.jpg", publish_date=timezone.now() - timezone.timedelta(days=2))
+        photo2 = Photo.objects.create(title="P2", raw_image="2.jpg", publish_date=timezone.now() - timezone.timedelta(days=1))
+        photo3 = Photo.objects.create(title="P3", raw_image="3.jpg", publish_date=timezone.now())
+        
+        PhotoInAlbum.objects.create(album=self.album, photo=photo1, order=1)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=2)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo3, order=3)
+
+        self.album.sort_method = Album.DefaultSortMethod.PUBLISHED
+        self.album.sort_descending = True
+        ordered = list(self.album.get_ordered_photos())
+        
+        self.assertEqual(len(ordered), 3)
+        self.assertEqual(ordered[0], photo3)  # newest first
+        self.assertEqual(ordered[1], photo2)
+        self.assertEqual(ordered[2], photo1)  # oldest last
+    
+    def test_get_ordered_photos_created_ascending(self):
+        """Test that photos are sorted by capture_date (metadata) in ascending order"""
+        photo1 = Photo.objects.create(title="P1", raw_image="1.jpg")
+        photo2 = Photo.objects.create(title="P2", raw_image="2.jpg")
+        photo3 = Photo.objects.create(title="P3", raw_image="3.jpg")
+        
+        PhotoMetadata.objects.create(photo=photo1, capture_date=timezone.now() - timezone.timedelta(days=10))
+        PhotoMetadata.objects.create(photo=photo2, capture_date=timezone.now() - timezone.timedelta(days=5))
+        PhotoMetadata.objects.create(photo=photo3, capture_date=timezone.now())
+        
+        PhotoInAlbum.objects.create(album=self.album, photo=photo3, order=1)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo1, order=2)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=3)
+
+        self.album.sort_method = Album.DefaultSortMethod.CREATED
+        self.album.sort_descending = False
+        ordered = list(self.album.get_ordered_photos())
+        
+        self.assertEqual(len(ordered), 3)
+        self.assertEqual(ordered[0], photo1)  # oldest capture date first
+        self.assertEqual(ordered[1], photo2)
+        self.assertEqual(ordered[2], photo3)  # newest capture date last
+    
+    def test_get_ordered_photos_created_descending(self):
+        """Test that photos are sorted by capture_date (metadata) in descending order"""
+        photo1 = Photo.objects.create(title="P1", raw_image="1.jpg")
+        photo2 = Photo.objects.create(title="P2", raw_image="2.jpg")
+        photo3 = Photo.objects.create(title="P3", raw_image="3.jpg")
+        
+        PhotoMetadata.objects.create(photo=photo1, capture_date=timezone.now() - timezone.timedelta(days=10))
+        PhotoMetadata.objects.create(photo=photo2, capture_date=timezone.now() - timezone.timedelta(days=5))
+        PhotoMetadata.objects.create(photo=photo3, capture_date=timezone.now())
+        
+        PhotoInAlbum.objects.create(album=self.album, photo=photo1, order=1)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=2)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo3, order=3)
+
+        self.album.sort_method = Album.DefaultSortMethod.CREATED
+        self.album.sort_descending = True
+        ordered = list(self.album.get_ordered_photos())
+        
+        self.assertEqual(len(ordered), 3)
+        self.assertEqual(ordered[0], photo3)  # newest capture date first
+        self.assertEqual(ordered[1], photo2)
+        self.assertEqual(ordered[2], photo1)  # oldest capture date last
+    
+    def test_manual_order_ignores_sort_descending(self):
+        """Test that manual ordering is not affected by sort_descending setting"""
+        photo1 = Photo.objects.create(title="P1", raw_image="1.jpg")
+        photo2 = Photo.objects.create(title="P2", raw_image="2.jpg")
+        photo3 = Photo.objects.create(title="P3", raw_image="3.jpg")
+        
+        PhotoInAlbum.objects.create(album=self.album, photo=photo1, order=1)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=2)
+        PhotoInAlbum.objects.create(album=self.album, photo=photo3, order=3)
+
+        self.album.sort_method = Album.DefaultSortMethod.MANUAL
+        
+        # Test with sort_descending = False
+        self.album.sort_descending = False
+        ordered = list(self.album.get_ordered_photos())
+        self.assertEqual(ordered[0], photo1)
+        self.assertEqual(ordered[1], photo2)
+        self.assertEqual(ordered[2], photo3)
+        
+        # Test with sort_descending = True (should produce same order)
+        self.album.sort_descending = True
+        ordered = list(self.album.get_ordered_photos())
+        self.assertEqual(ordered[0], photo1)
+        self.assertEqual(ordered[1], photo2)
+        self.assertEqual(ordered[2], photo3)
+    
     def test_album_parents(self):
         parent = Album.objects.create(title="Parent", description="Parent album")
         child = Album.objects.create(title="Child", description="Child album", parent=parent)

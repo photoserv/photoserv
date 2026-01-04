@@ -158,7 +158,8 @@ class AlbumForm(forms.ModelForm):
     )
     sort_descending = forms.BooleanField(
         required=False,
-        initial=True
+        initial=True,
+        help_text="This is ignored by manual and random sort modes."
     )
 
     def __init__(self, *args, **kwargs):

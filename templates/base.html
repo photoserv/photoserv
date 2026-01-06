@@ -61,7 +61,26 @@
         </div>
     </header>
     <main class="flex-grow p-4 w-full">
-        <div class="max-w-6xl mx-auto grid grid-cols-1 gap-y-4">{% block content %} {% endblock %}</div>
+        <div class="max-w-6xl mx-auto grid grid-cols-1 gap-y-4">
+            <div>
+                {% block messages %}
+                {% if messages %}
+                {% for message in messages %}
+                {% if message.tags == 'success' %}
+                <div class="alert alert-success">
+                    {{ message }}
+                </div>
+                {% elif message.tags == 'error' %}
+                <div class="alert alert-error">
+                    {{ message }}
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
+                {% endblock %}
+            </div>
+            {% block content %} {% endblock %}
+        </div>
     </main>
 
     <footer class="p-4 text-center">

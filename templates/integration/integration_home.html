@@ -6,16 +6,6 @@
 {% block content %}
 <h2>Integrations</h2>
 
-{% if messages %}
-{% for message in messages %}
-{% if message.tags == 'success' %}
-<div class="alert alert-success">
-    {{ message }}
-</div>
-{% endif %}
-{% endfor %}
-{% endif %}
-
 <div class="grid grid-cols-1 gap-6">
     <!-- Web Requests Section -->
     <div>

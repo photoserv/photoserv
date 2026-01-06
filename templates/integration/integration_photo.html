@@ -6,20 +6,6 @@
 {% block content %}
 <h2>Integrations for: {{ photo }}</h2>
 
-{% if messages %}
-    {% for message in messages %}
-        {% if message.tags == 'success' %}
-            <div class="alert alert-success">
-                {{ message }}
-            </div>
-                    {% elif message.tags == 'error' %}
-            <div class="alert alert-error">
-                {{ message }}
-            </div>
-        {% endif %}
-    {% endfor %}
-{% endif %}
-
 <div class="grid grid-cols-1 gap-6">
     <!-- Photo Preview -->
     <div class="box">

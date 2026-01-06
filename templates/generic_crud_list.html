@@ -8,8 +8,10 @@
 <div class="flex justify-between">
     <h2>{{ object_type_name_plural }}</h2>
 
-    {% if can_directly_create %}
-        <div>
+    <div>
+        {% block header_buttons %}
+        {% endblock %}
+        {% if can_directly_create %}
             {% if formset_support %}
             <a href="{% url object_url_name_slug|add:'-create-multiple' %}" class="btn btn-primary">
                 Create Multiple
@@ -18,8 +20,8 @@
             <a href="{% url object_url_name_slug|add:'-create' %}" class="btn btn-primary">
                 Create
             </a>
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 </div>
 
 <div class="overflow-x-hidden">

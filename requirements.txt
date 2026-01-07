@@ -8,7 +8,7 @@ celery==5.5.3
 pyexiftool==0.5.6
 djangorestframework==3.16.1
 redis==7.1.0
-mozilla-django-oidc==4.0.1
+mozilla-django-oidc==5.0.2
 psycopg2-binary ==2.9.11
 gunicorn==23.0.0
 django-celery-results==2.6.0

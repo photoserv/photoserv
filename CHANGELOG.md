@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.7.7](https://github.com/photoserv/photoserv/compare/0.7.6...0.7.7) (2026-01-07)
+
+
+### Bug Fixes
+
+* Album manual sort mode ignores asc/desc option ([6661291](https://github.com/photoserv/photoserv/commit/6661291b8b2c99fa5bba430a82aef1a3a40a0f2e))
+* Display album sort asc/desc on detail page ([12476d1](https://github.com/photoserv/photoserv/commit/12476d19ddbc39c937036f40084fdaad1314133d))
+* Make "descending" the default album sort mode ([b56c096](https://github.com/photoserv/photoserv/commit/b56c0962d8240d07cf298c4bb52322eb42b096de))
+
+
+### Dependencies
+
+* **js:** bump @alpinejs/sort from 3.15.2 to 3.15.3 ([cc6dae9](https://github.com/photoserv/photoserv/commit/cc6dae9d159ff818351f50d8651f7e0b5c6a1403))
+* **js:** bump alpinejs from 3.15.2 to 3.15.3 ([2f5f17e](https://github.com/photoserv/photoserv/commit/2f5f17eaaa43db555c9d803dcd34301ecb9e58b5))
+* **js:** bump daisyui from 5.5.8 to 5.5.14 ([57ce872](https://github.com/photoserv/photoserv/commit/57ce872b89d1c68bafe74844d8e22ac8ba1d1068))
+* **js:** bump esbuild from 0.27.1 to 0.27.2 ([3a304a8](https://github.com/photoserv/photoserv/commit/3a304a8eb79d0714469ed571db5cc7042c0c7cb3))
+* **js:** bump tailwindcss from 4.1.17 to 4.1.18 ([04bd221](https://github.com/photoserv/photoserv/commit/04bd2216fe701517448989e161a0df625892eaf8))
+* **python:** bump crispy-daisyui from 0.8.0 to 0.9.0 ([52c7a51](https://github.com/photoserv/photoserv/commit/52c7a5114b418158a9b9d05fa5b6e20e3de2f5c5))
+* **python:** bump django from 5.2.4 to 6.0 ([10c562e](https://github.com/photoserv/photoserv/commit/10c562e31b27e2fcc56cd99519e4b8fc13386bc6))
+* **python:** bump django-tables2 from 2.7.5 to 2.8.0 ([e7cb815](https://github.com/photoserv/photoserv/commit/e7cb8150059a7b301d8b3d417ec6dfdb858c9252))
+* **python:** bump mozilla-django-oidc from 4.0.1 to 5.0.2 ([82706c4](https://github.com/photoserv/photoserv/commit/82706c404a6dc6309dae87afec53257abc3f9c7e))
+* **python:** update pillow requirement from &lt;=11.3 to &lt;=12.0.0 ([36bf15c](https://github.com/photoserv/photoserv/commit/36bf15c2b19005daa928d82ce544a10ae74c70f1))
+
 ## [0.7.6](https://github.com/photoserv/photoserv/compare/0.7.5...0.7.6) (2026-01-01)
 
 

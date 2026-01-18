@@ -82,7 +82,6 @@ Example:
 
 ### Bugs
 
-* Field error text renders white, should be red
 * OIDC reauthorization redirect drops POST requests, essentially losing form submissions.
 * Photo multi-upload resets file uploads on error.
 

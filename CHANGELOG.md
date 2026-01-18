@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/photoserv/photoserv/compare/0.7.7...0.8.0) (2026-01-18)
+
+
+### Features
+
+* Album list tree view ([8b4c8d1](https://github.com/photoserv/photoserv/commit/8b4c8d14433d4a0147dd37cea616bac85d02e585))
+* Photo calendar ([798cfc4](https://github.com/photoserv/photoserv/commit/798cfc4835506f010687f379763e6e35ed2fe5d0))
+
+
+### Bug Fixes
+
+* Form field errors display red instead of white ([b84a47b](https://github.com/photoserv/photoserv/commit/b84a47b55fb412c8cda80fc510f10ca96f073886))
+
 ## [0.7.7](https://github.com/photoserv/photoserv/compare/0.7.6...0.7.7) (2026-01-07)
 
 

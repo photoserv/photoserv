@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Photo Calendar{% endblock %}
+
+{% block content %}
+
+<div class="flex flex-col md:flex-row md:justify-between items-start md:items-center mb-4">
+    <h2>
+        {% include "partials/back_button.html" %}
+        <span class="text-xl font-semibold">
+            Photo Calendar - {{ month_name }} {{ year }}
+        </span>
+    </h2>
+
+    <div class="flex items-center justify-center mx-auto md:mr-0 gap-2 mt-2 md:mt-0">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}" class="btn btn-primary">Prev</a>
+        <a href="?year={{ next_year }}&month={{ next_month }}" class="btn btn-primary">Next</a>
+
+        <select onchange="location = '?year=' + this.value + '&month={{ month }}'" class="select select-bordered">
+            {% for y in years %}
+                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+
+        <a href="?year={{ today.year }}&month={{ today.month }}" class="btn">Today</a>
+    </div>
+</div>
+
+{# Mobile: list view #}
+<div class="block md:hidden">
+    <div class="space-y-4">
+        {% for week in weeks %}
+            {% for day in week %}
+                <div class="p-2 {% if day.is_today %}bg-accent text-accent-content{% elif not day.in_month %}opacity-50{% else %}bg-base-100{% endif %}">
+                    <div class="font-semibold">{{ day.date|date:"D, M j" }}</div>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        {% for photo in day.photos %}
+                            <a href="{% url 'photo-detail' photo.pk %}" class="badge badge-primary underline decoration-dotted">{{ photo.title }}</a>
+                        {% empty %}
+                            <span class="font-light opacity-50">No photos</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+</div>
+
+{# Desktop: calendar grid #}
+<div class="hidden md:block">
+    <div class="grid grid-cols-7 gap-1 text-sm">
+        {# Weekday headers Sun-Sat #}
+        {% for wd in weekdays %}
+            <div class="text-center font-medium py-2">{{ wd }}</div>
+        {% endfor %}
+
+        {% for week in weeks %}
+            {% for day in week %}
+                <div class="min-h-32 p-2 border box-border {% if day.is_today %}bg-accent text-accent-content{% elif not day.in_month %}opacity-50 bg-base-100{% else %}bg-base-100{% endif %}">
+                    <div class="flex justify-between items-start">
+                        <div class="text-xs font-semibold">{{ day.day }}</div>
+                    </div>
+                    <div class="flex flex-col gap-1 mt-2 max-h-40 overflow-auto">
+                        {% for photo in day.photos %}
+                            <a href="{% url 'photo-detail' photo.pk %}" class="badge badge-sm badge-primary underline decoration-dotted text-ellipsis overflow-hidden whitespace-nowrap" title="{{ photo.title }}">{{ photo.title }}</a>
+                        {% empty %}
+                            <span class="font-light opacity-50 text-xs">No photos</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

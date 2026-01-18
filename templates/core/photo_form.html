@@ -33,6 +33,13 @@ Editing {{ object|default:object_type_name }}
         <div>
             {% for field in form %}
             {{ field|as_crispy_field }}
+            {% if field.name == "publish_date" %}
+                <div class="w-full text-right">
+                    <a href="{% url 'photo-calendar' %}" class="link text-sm" target="_blank" rel="noopener noreferrer">
+                        View Photo Calendar
+                    </a>
+                </div>
+            {% endif %}
             {% endfor %}
         </div>
 

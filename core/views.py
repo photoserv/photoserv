@@ -9,7 +9,8 @@ from .forms import *
 from .tables import *
 from .mixins import CRUDGenericMixin
 from django.http import FileResponse, Http404
-from django.urls import NoReverseMatch
+import calendar
+from collections import defaultdict
 
 #region Photo
 
@@ -23,7 +24,7 @@ class PhotoMixin(CRUDGenericMixin):
 class PhotoListView(PhotoMixin, SingleTableView):
     model = Photo
     table_class = PhotoTable
-    template_name = "generic_crud_list.html"
+    template_name = "core/photo_list.html"
 
     paginate_by = 10
 
@@ -114,6 +115,92 @@ class PhotoCreateMultipleView(PhotoMixin, View):
             return redirect(reverse("photo-list"))
         return render(request, self.template_name, {"formset": formset})
 
+
+class PhotoCalendarView(TemplateView):
+    template_name = "core/photo_calendar.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+
+        # Parse month/year from GET params
+        req = self.request
+        try:
+            year = int(req.GET.get("year", today.year))
+            month = int(req.GET.get("month", today.month))
+        except ValueError:
+            year, month = today.year, today.month
+
+        # Calendar starting on Sunday
+        cal = calendar.Calendar(firstweekday=6)
+        month_dates = list(cal.itermonthdates(year, month))
+        # Build contiguous weeks (list of 7-date lists)
+        weeks_raw = [month_dates[i : i + 7] for i in range(0, len(month_dates), 7)]
+
+        # Preload photos that fall within the displayed range
+        range_start = month_dates[0]
+        range_end = month_dates[-1]
+        photos_qs = (
+            Photo.objects.filter(publish_date__date__range=(range_start, range_end))
+            .order_by('publish_date')
+        )
+
+        # Group photos by local date
+        photos_map = defaultdict(list)
+        for p in photos_qs:
+            try:
+                pd = timezone.localtime(p.publish_date).date()
+            except Exception:
+                # Fallback to naive date if timezone conversion fails
+                pd = p.publish_date.date()
+            photos_map[pd].append(p)
+
+        # Build week/days data structure for template convenience
+        weeks = []
+        for week in weeks_raw:
+            week_row = []
+            for d in week:
+                week_row.append({
+                    'date': d,
+                    'day': d.day,
+                    'in_month': d.month == month,
+                    'is_today': d == today,
+                    'photos': photos_map.get(d, []),
+                })
+            weeks.append(week_row)
+
+        # Prev/next month calculation
+        if month == 1:
+            prev_month, prev_year = 12, year - 1
+        else:
+            prev_month, prev_year = month - 1, year
+        if month == 12:
+            next_month, next_year = 1, year + 1
+        else:
+            next_month, next_year = month + 1, year
+
+        # Years dropdown population from photo publish dates
+        years_qs = Photo.objects.dates('publish_date', 'year')
+        years = sorted({d.year for d in years_qs})
+        if not years:
+            years = [today.year]
+
+        context.update(
+            {
+                'weeks': weeks,
+                'month': month,
+                'year': year,
+                'month_name': calendar.month_name[month],
+                'prev_month': prev_month,
+                'prev_year': prev_year,
+                'next_month': next_month,
+                'next_year': next_year,
+                'years': years,
+                'weekdays': ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+                'today': today,
+            }
+        )
+        return context
 
 class PhotoUpdateView(PhotoMixin, UpdateView):
     model = Photo

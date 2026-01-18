@@ -1,7 +1,7 @@
 from django.urls import reverse
 from django.shortcuts import render, redirect
 from django.views import View
-from django.views.generic import DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django_tables2.views import SingleTableView
 from django.db.models import Count
 from .models import *
@@ -236,10 +236,30 @@ class AlbumDetailView(DetailView):
         return context
 
 
-class AlbumListView(AlbumMixin, SingleTableView):
-    model = Album
-    template_name = "generic_crud_list.html"
-    table_class = AlbumTable
+class AlbumListView(AlbumMixin, TemplateView):
+    template_name = "core/album_list.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Build a parent->children mapping for all albums, sorted alphabetically
+        all_albums = Album.objects.all().order_by('title')
+        children_map = {}
+        for a in all_albums:
+            parent_id = a.parent_id
+            children_map.setdefault(parent_id, []).append(a)
+
+        def build_nodes(parent_id=None):
+            nodes = []
+            for a in children_map.get(parent_id, []):
+                nodes.append({
+                    'album': a,
+                    'children': build_nodes(a.id)
+                })
+            return nodes
+
+        context['album_tree'] = build_nodes(None)
+        return context
 
 
 class AlbumCreateView(AlbumMixin, CreateView):

@@ -1,0 +1,17 @@
+<ul class="menu w-full">
+    {% for node in nodes %}
+    <li>
+        <a href="{% url 'album-detail' node.album.pk %}" class="w-full">
+            <span class="underline decoration-dotted">
+                {{ node.album.title }}
+            </span>
+            <span class="font-light">
+                ({{ node.album.slug }})
+            </span>
+        </a>
+        {% if node.children %}
+        {% include "core/partials/album_tree_node.html" with nodes=node.children %}
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>

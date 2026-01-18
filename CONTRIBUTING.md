@@ -89,7 +89,6 @@ Example:
 
 * **Photo Calendar**: Month-by-month grid showing upcoming photos by publish date. Photos listed chronologically within each day. Add link on photo form and before photo "Create" buttons (style: `btn-secondary`).
 * Query photos (photo table in UI) by any arbitrary fields and/or metadata
-* Album hierarchy tree view instead of generic table.
 * Dynamic entires-per-page for all tables.
 * Automatic albums based on photo data/metadata (e.g., camera model, location)
 * Real implementation of a dashboard (home app)?... This is very low priority.

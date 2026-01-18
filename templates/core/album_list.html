@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load render_table from django_tables2 %}
+
+{% block title %}List of Albums{% endblock %}
+
+{% block content %}
+
+<div class="flex justify-between">
+    <h2>Albums</h2>
+
+    <div>
+        {% block header_buttons %}
+        {% endblock %}
+        {% if can_directly_create %}
+        {% if formset_support %}
+        <a href="{% url object_url_name_slug|add:'-create-multiple' %}" class="btn btn-primary">
+            Create Multiple
+        </a>
+        {% endif %}
+        <a href="{% url object_url_name_slug|add:'-create' %}" class="btn btn-primary">
+            Create
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="overflow-x-hidden">
+    <div class="bg-base-200 w-full box-border w-full">
+        {% include "core/partials/album_tree_node.html" with nodes=album_tree %}
+    </div>
+</div>
+{% endblock %}

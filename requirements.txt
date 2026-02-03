@@ -2,7 +2,7 @@ python-dotenv==1.2.1
 django==6.0.1
 pillow<=12.1.0
 django-tables2==2.8.0
-django-crispy-forms==2.4
+django-crispy-forms==2.5
 crispy-daisyui==0.9.0
 celery==5.5.3
 pyexiftool==0.5.6

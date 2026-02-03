@@ -13,7 +13,7 @@
     "tailwindcss": "^4.1.18"
   },
   "dependencies": {
-    "@alpinejs/sort": "^3.15.3",
+    "@alpinejs/sort": "^3.15.6",
     "alpinejs": "^3.15.3",
     "@codemirror/view": "^6.34.3",
     "@codemirror/state": "^6.4.1",

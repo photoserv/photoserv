@@ -91,6 +91,7 @@ Example:
 * Automatic albums based on photo data/metadata (e.g., camera model, location)
 * Real implementation of a dashboard (home app)?... This is very low priority.
 * Support for geotags, manual geotags, and a photo map
+* Stylized error pages (404, 500, etc.)
 
 ## Project Structure
 

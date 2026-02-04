@@ -90,7 +90,6 @@ Example:
 * Dynamic entires-per-page for all tables.
 * Automatic albums based on photo data/metadata (e.g., camera model, location)
 * Real implementation of a dashboard (home app)?... This is very low priority.
-* Photo staging area
 * Support for geotags, manual geotags, and a photo map
 
 ## Project Structure

@@ -80,12 +80,6 @@ Example:
 
 ## TODO (Wanted Contributions)
 
-### Bugs
-
-* OIDC reauthorization redirect drops POST requests, essentially losing form submissions.
-
-### Feature Requests
-
 * Query photos (photo table in UI) by any arbitrary fields and/or metadata
 * Dynamic entires-per-page for all tables.
 * Automatic albums based on photo data/metadata (e.g., camera model, location)

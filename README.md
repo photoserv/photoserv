@@ -64,7 +64,11 @@ OIDC_SIGN_ALGO=RS256 # optional
 ```
 
 OIDC Callback URL: `<your-photoserv-root>/login/oidc/callback/`  
-Example: `https://photoserv.domain.com/login/oidc/callback/`
+Example: `https://photoserv.domain.com/login/oidc/callback/`  
+
+> [!IMPORTANT]
+> Be sure to set an OIDC Access Token expiration that is long enough for the duration of time
+you may be working on the multi-photo upload form. I use 1 hour.
 
 ## API Documentation
 

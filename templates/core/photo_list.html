@@ -1,14 +1,11 @@
 {% extends "generic_crud_list.html" %}
 
-{% block content %}
-
-{{ block.super }}
+{% block header_buttons %}
 
 
-<div class="mx-auto">
-    <a href="{% url 'photo-calendar' %}" class="btn btn-secondary">
-        Photo Calendar
-    </a>
-</div>
+<a href="{% url 'photo-calendar' %}" class="btn btn-secondary">
+    Photo Calendar
+</a>
+
 
 {% endblock %}

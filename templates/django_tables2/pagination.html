@@ -1,5 +1,5 @@
 {% load django_tables2 %}
-<div class="w-full overflow-x-auto py-2 flex justify-center">
+<div class="w-full overflow-x-auto pb-2 pt-4 flex flex-col items-center gap-2">
     <div class="join inline-flex">
         {% if table.page.has_previous %}
         <a class="join-item btn" href="{% querystring table.prefixed_page_field=table.page.previous_page_number %}">Prev</a>
@@ -26,4 +26,13 @@
         {% endif %}
     </div>
 
+    <div class="text-sm">
+        Show [
+            <a href="{% querystring table.prefixed_per_page_field=10 %}" class="link decoration-dotted">10</a> |
+            <a href="{% querystring table.prefixed_per_page_field=20 %}" class="link decoration-dotted">20</a> |
+            <a href="{% querystring table.prefixed_per_page_field=50 %}" class="link decoration-dotted">50</a> |
+            <a href="{% querystring table.prefixed_per_page_field=100 %}" class="link decoration-dotted">100</a> |
+            <a href="{% querystring table.prefixed_per_page_field=1000 %}" class="link decoration-dotted">1000</a>
+        ] Items
+    </div>
 </div>

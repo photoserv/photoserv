@@ -32,6 +32,9 @@ METADATA_EXIF_FLASH = "EXIF:Flash"
 
 METADATA_EXIF_COPYRIGHT = "EXIF:Copyright"
 
+METADATA_COMPOSITE_LATITUDE = "Composite:GPSLatitude"
+METADATA_COMPOSITE_LONGITUDE = "Composite:GPSLongitude"
+
 
 def gen_size(photo, size):
     photo.raw_image.open()  # ensure file is ready
@@ -125,6 +128,8 @@ def delete_files(files):
 
 @shared_task
 def generate_photo_metadata(photo_id):
+    photo: models.Photo
+
     try:
         photo = models.Photo.objects.get(id=photo_id)
     except models.Photo.DoesNotExist:
@@ -148,7 +153,9 @@ def generate_photo_metadata(photo_id):
             f"-{METADATA_EXIF_EXPOSURE_PROGRAM}",
             f"-{METADATA_EXIF_EXPOSURE_COMPENSATION}#",
             f"-{METADATA_EXIF_FLASH}",
-            f"-{METADATA_EXIF_COPYRIGHT}"
+            f"-{METADATA_EXIF_COPYRIGHT}",
+            f"-{METADATA_COMPOSITE_LATITUDE}#",
+            f"-{METADATA_COMPOSITE_LONGITUDE}#",
         ])
         if not metadata_list:
             return f"No metadata found for photo id {photo.id}."
@@ -180,7 +187,17 @@ def generate_photo_metadata(photo_id):
 
         metadata.copyright = metadata_dict.get(METADATA_EXIF_COPYRIGHT)
 
+        metadata.raw_latitude = metadata_dict.get(METADATA_COMPOSITE_LATITUDE)
+        metadata.raw_longitude = metadata_dict.get(METADATA_COMPOSITE_LONGITUDE)
+
         metadata.save()
+
+        # If the photo's lat/long is null, update it from metadata
+        if photo.latitude is None or photo.longitude is None:
+            if metadata.raw_latitude is not None and metadata.raw_longitude is not None:
+                photo.latitude = metadata.raw_latitude
+                photo.longitude = metadata.raw_longitude
+                photo.save(update_fields=['latitude', 'longitude'])
 
         return f"Metadata generated for photo id {photo.id}."
 

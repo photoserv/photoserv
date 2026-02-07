@@ -4,9 +4,43 @@ from django.forms import modelformset_factory
 from crispy_forms.helper import FormHelper
 from .models import *
 from .tasks import post_photo_create
+import json
 
 
-class PhotoForm(forms.ModelForm):
+class FormWithCustomAttributesFieldMixin(forms.Form):
+    custom_attributes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 10,
+            'class': 'textarea textarea-bordered w-full font-mono',
+            'data-json-editor': 'true'
+        }),
+        help_text="Specify any custom data (JSON format). Top level must be a dict/object."
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Pre-populate config field with pretty-printed JSON
+        if self.instance and self.instance.pk and self.instance.custom_attributes:
+            self.initial['custom_attributes'] = json.dumps(self.instance.custom_attributes, indent=2)
+        elif 'initial' in kwargs and 'custom_attributes' in kwargs['initial']:
+            if isinstance(kwargs['initial']['custom_attributes'], dict):
+                self.initial['custom_attributes'] = json.dumps(kwargs['initial']['custom_attributes'], indent=2)
+
+    def clean_custom_attributes(self):
+        data = self.cleaned_data.get('custom_attributes', '')
+        if not data.strip():
+            return dict()
+        try:
+            parsed = json.loads(data)
+            if not isinstance(parsed, dict):
+                raise forms.ValidationError("Custom attributes must be a JSON object (dictionary), not a list or other type.")
+            return parsed
+        except json.JSONDecodeError as e:
+            raise forms.ValidationError(f"Invalid JSON: {str(e)}")
+
+
+class PhotoForm(forms.ModelForm, FormWithCustomAttributesFieldMixin):
     albums = forms.ModelMultipleChoiceField(
         queryset=Album.objects.all(),
         required=False,
@@ -25,6 +59,7 @@ class PhotoForm(forms.ModelForm):
         widget=forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
         input_formats=["%Y-%m-%dT%H:%M"],
     )
+    location = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -39,6 +74,15 @@ class PhotoForm(forms.ModelForm):
             # Also add a list version for the template
             self.initial['tags_list'] = list(current_tags)
 
+            # Handle location as a simple string like latitude;longitude
+            if self.instance.latitude is not None and self.instance.longitude is not None:
+                location_value = f"{self.instance.latitude};{self.instance.longitude}"
+                self.fields['location'].initial = location_value
+                self.initial['location'] = location_value
+            else:
+                self.fields['location'].initial = ""
+                self.initial['location'] = ""
+
             # Disable publish_date field if photo is already published
             if self.instance.published:
                 self.fields['publish_date'].disabled = True
@@ -49,7 +93,7 @@ class PhotoForm(forms.ModelForm):
 
     class Meta:
         model = Photo
-        fields = ["title", "description", "raw_image", "slug", "hidden", "publish_date", "albums"]
+        fields = ["title", "description", "raw_image", "slug", "hidden", "hide_location", "publish_date", "custom_attributes", "albums"]
         exclude = ["last_updated"]
     
     def save(self, commit=True, integration_photo_form=None):
@@ -100,6 +144,24 @@ class PhotoForm(forms.ModelForm):
             tag, _ = Tag.objects.get_or_create(name=tag_name)
             PhotoTag.objects.get_or_create(photo=photo, tag=tag)
         
+        # Handle location
+        location_str = self.cleaned_data.get("location", "")
+        if location_str:
+            try:
+                lat_str, lon_str = location_str.split(";")
+                photo.latitude = float(lat_str.strip())
+                photo.longitude = float(lon_str.strip())
+                photo.save()
+            except ValueError:
+                # Invalid format, ignore or handle as needed
+                pass
+        else:
+            # If location field is empty, clear existing location data
+            if photo.latitude is not None or photo.longitude is not None:
+                photo.latitude = None
+                photo.longitude = None
+                photo.save()
+        
         # clean up orphaned tags
         Tag.objects.filter(photos__isnull=True).delete()
 
@@ -146,7 +208,7 @@ class SizeForm(forms.ModelForm):
             self.fields["comment"].disabled = True
 
 
-class AlbumForm(forms.ModelForm):
+class AlbumForm(forms.ModelForm, FormWithCustomAttributesFieldMixin):
     slug = forms.CharField(
         required=False,
         help_text="Leave blank to auto calculate"

@@ -73,6 +73,16 @@ Album: {{ object }}
                     </td>
                 </tr>
                 <tr>
+                    <th>Custom Attributes</th>
+                    <td>
+                        {% if object.custom_attributes %}
+                            <pre class="whitespace-pre-wrap bg-base-200 p-2 rounded text-sm font-mono max-h-72 overflow-auto block">{{ custom_attributes }}</pre>
+                        {% else %}
+                            (none)
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
                     <th>Created</th>
                     <td>{{ object.created_at | date:"Y-m-d H:i" }}</td>
                 </tr>

@@ -37,7 +37,7 @@ class PythonPluginForm(forms.ModelForm):
         """Validate and parse JSON config."""
         config_str = self.cleaned_data.get('config', '').strip()
         if not config_str:
-            return {}
+            return dict()
         
         try:
             config = json.loads(config_str)

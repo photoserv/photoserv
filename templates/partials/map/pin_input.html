@@ -1,0 +1,146 @@
+{% comment %}
+Map input for Django forms - allows user to select a location by clicking on the map.
+Stores location as "latitude;longitude" in a hidden input field.
+
+Params:
+- form_input_name: name for the hidden input (default: 'location')
+- initial: initial value for the input (format: 'lat;lon')
+- zoom: initial zoom level (default: 10)
+- id: html id for the map (default: 'location-map')
+- height: CSS height for the map container (default: 'h-96')
+- label: Label text for the input (default: 'Location')
+
+Usage in forms:
+- Map starts locked to prevent accidental panning while scrolling
+- Click anywhere on the map to unlock it and place a marker
+- Click map again to move marker
+- Click marker to remove it
+- Value is stored as semicolon-separated "lat;lon"
+{% endcomment %}
+
+<div x-data="pinInput('{{ initial|default:'' }}')" class="space-y-2">
+    <label class="block font-medium mb-1">{{ label|default:'Location' }}</label>
+    
+    <div id="{{ id|default:'location-map' }}" class="w-full {{ height|default:'h-96' }}" style="cursor: crosshair;"></div>
+    
+    <input type="hidden" 
+           name="{{ form_input_name|default:'location' }}" 
+           x-model="value">
+</div>
+
+<script>
+    function pinInput(initialValue) {
+        return {
+            value: initialValue || '',
+            marker: null,
+            leafletMap: null,
+            mapId: "{{ id|default:'location-map' }}",
+            mapLocked: true,
+            
+            init() {
+                const self = this;
+                
+                // Parse initial coordinates for map centering
+                let initialLat = 0, initialLng = 0, hasInitial = false;
+                if (this.value && this.value.includes(';')) {
+                    const parts = this.value.split(';');
+                    initialLat = parseFloat(parts[0]);
+                    initialLng = parseFloat(parts[1]);
+                    hasInitial = !isNaN(initialLat) && !isNaN(initialLng);
+                }
+                
+                const zoom = parseInt('{{ zoom|default:10 }}');
+                
+                // Initialize the base map
+                document.addEventListener('DOMContentLoaded', function() {
+                    self.leafletMap = L.map(self.mapId, {
+                        center: hasInitial ? [initialLat, initialLng] : [0, 0],
+                        zoom: hasInitial ? zoom : 2,
+                        zoomControl: true,
+                        dragging: false,
+                        scrollWheelZoom: false,
+                        doubleClickZoom: false,
+                        boxZoom: false,
+                        keyboard: false
+                    });
+                    
+                    // OSM Streets
+                    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '© OpenStreetMap contributors'
+                    });
+                    osm.addTo(self.leafletMap);
+                    
+                    // ESRI Satellite
+                    const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        maxZoom: 19,
+                        attribution: 'Tiles © Esri'
+                    });
+                    
+                    L.control.layers({ 'OSM Streets': osm, 'ESRI Satellite': esri }).addTo(self.leafletMap);
+                    
+                    // Setup interaction
+                    self.setupMap();
+                    
+                    // Place initial marker if exists
+                    if (hasInitial) {
+                        self.placeMarker(initialLat, initialLng);
+                    }
+                });
+            },
+            
+            setupMap() {
+                const self = this;
+                
+                // Map click handler - unlock map on first click, then add or move marker
+                this.leafletMap.on('click', function(e) {
+                    if (self.mapLocked) {
+                        self.unlockMap();
+                    }
+                    self.placeMarker(e.latlng.lat, e.latlng.lng);
+                });
+            },
+            
+            unlockMap() {
+                this.mapLocked = false;
+                this.leafletMap.dragging.enable();
+                this.leafletMap.scrollWheelZoom.enable();
+                this.leafletMap.doubleClickZoom.enable();
+                this.leafletMap.boxZoom.enable();
+                this.leafletMap.keyboard.enable();
+                document.getElementById(this.mapId).style.cursor = 'crosshair';
+            },
+            
+            placeMarker(lat, lng) {
+                const self = this;
+                
+                // Remove existing marker if any
+                if (this.marker) {
+                    this.leafletMap.removeLayer(this.marker);
+                }
+                
+                // Create new marker
+                this.marker = L.marker([lat, lng]).addTo(this.leafletMap);
+                this.value = lat.toFixed(6) + ';' + lng.toFixed(6);
+                
+                // Click marker to remove it
+                this.marker.on('click', function(e) {
+                    L.DomEvent.stopPropagation(e);
+                    self.removeMarker();
+                });
+            },
+            
+            removeMarker() {
+                if (this.marker) {
+                    this.leafletMap.removeLayer(this.marker);
+                    this.marker = null;
+                    this.value = '';
+                }
+            }
+        }
+    }
+    
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('pinInput', pinInput);
+    });
+</script>

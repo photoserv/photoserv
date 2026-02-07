@@ -11,6 +11,7 @@ from .mixins import CRUDGenericMixin
 from django.http import FileResponse, Http404
 import calendar
 from collections import defaultdict
+import json
 
 #region Photo
 
@@ -39,6 +40,7 @@ class PhotoDetailView(DetailView):
         context['sizes'] = [
             (size, photo_sizes.get(size.id)) for size in all_sizes
         ]
+        context['custom_attributes'] = json.dumps(self.object.custom_attributes or {}, indent=2)
         return context
 
 
@@ -316,10 +318,9 @@ class AlbumDetailView(DetailView):
         context = super().get_context_data(**kwargs)
 
         ordered_photos = self.object.get_ordered_photos()
-
         table = PhotoListTable(ordered_photos)
-
         context["photo_table"] = table
+        context['custom_attributes'] = json.dumps(self.object.custom_attributes or {}, indent=2)
         return context
 
 

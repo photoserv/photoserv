@@ -71,6 +71,11 @@ Photo: {{ object }}
                         {% else %}
                         No
                         {% endif %}
+                        {% if object.hide_location %}
+                        <span class="font-light">
+                            &ndash; Location Hidden
+                        </span>
+                        {% endif %}
                     </td>
                 </tr>
                 {% if object.albums %}
@@ -116,7 +121,31 @@ Photo: {{ object }}
                         {% endif %}
                     </td>
                 </tr>
-                                <tr>
+                <tr>
+                    <th>Custom Attributes</th>
+                    <td>
+                        {% if object.custom_attributes %}
+                            <pre class="whitespace-pre-wrap bg-base-200 p-2 rounded text-sm font-mono max-h-72 overflow-auto block">{{ custom_attributes }}</pre>
+                        {% else %}
+                            (none)
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Location</th>
+                    <td>
+                        <div class="{% if object.latitude is not None and object.longitude is not None %}h-64{% endif %}">
+                            {% if object.latitude is not None and object.longitude is not None %}
+                                {% with map_id="photo-location-map-"|add:object.pk|slugify %}
+                                    {% include "partials/map/pin.html" with latitude=object.latitude longitude=object.longitude zoom=12 locked=True show_zoom_control=True id=map_id %}
+                                {% endwith %}
+                            {% else %}
+                                (none)
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                <tr>
                     <th>Created</th>
                     <td>{{ object.created_at | date:"Y-m-d H:i" }}</td>
                 </tr>
@@ -220,6 +249,14 @@ Photo: {{ object }}
             <tr>
                 <th>Copyright</th>
                 <td>{{ object.metadata.copyright }}</td>
+            </tr>
+            {% endif %}
+            {% if object.metadata.raw_latitude and object.metadata.raw_longitude %}
+            <tr>
+                <th>Raw Location</th>
+                <td>
+                    {% include "partials/map/pin.html" with latitude=object.metadata.raw_latitude longitude=object.metadata.raw_longitude zoom=12 locked=True id="metadata-map" show_zoom_control=True %}
+                </td>
             </tr>
             {% endif %}
         </table>

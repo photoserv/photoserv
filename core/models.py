@@ -39,6 +39,10 @@ class Photo(PublicEntity):
     publish_date = models.DateTimeField(default=timezone.now, blank=True, null=False)
     hidden = models.BooleanField(default=False, help_text="Hide from public API")
     _published = models.BooleanField(default=False, db_column="published")
+    custom_attributes = models.JSONField(default=dict, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    hide_location = models.BooleanField(default=False, help_text="Hide location data from public API")
 
     tags = models.ManyToManyField(
         "Tag",
@@ -93,6 +97,10 @@ class Photo(PublicEntity):
         # Check if the slug exists for a different object
         if Photo.objects.filter(slug=slug_to_check).exclude(pk=self.pk).exists():
             raise ValidationError(f"A photo with the slug '{slug_to_check}' already exists.")
+        
+        # Enforce latitude and longitude both being set or both being null
+        if (self.latitude is not None and self.longitude is None) or (self.latitude is None and self.longitude is not None):
+            raise ValidationError("Both latitude and longitude must be set together or both must be null.")
     
     # After saving a new photo, trigger the task to generate sizes
     def save(self, schedule_followup_tasks: bool = False, *args, **kwargs):
@@ -103,6 +111,13 @@ class Photo(PublicEntity):
         if not is_new:
             # Recalculate published status on updates
             self.update_published(dispatch_signals=True)
+
+            # If the lat/long is null, fetch from metadata if available
+            if (self.latitude is None or self.longitude is None) and hasattr(self, "metadata"):
+                if self.metadata.raw_latitude is not None and self.metadata.raw_longitude is not None:
+                    self.latitude = self.metadata.raw_latitude
+                    self.longitude = self.metadata.raw_longitude
+
         super().save(*args, **kwargs)
 
         if schedule_followup_tasks and is_new:
@@ -168,6 +183,9 @@ class PhotoMetadata(PublicEntity):
     flash = models.CharField(max_length=255, null=True, blank=True)
 
     copyright = models.CharField(max_length=512, null=True, blank=True)
+
+    raw_latitude = models.FloatField(null=True, blank=True)
+    raw_longitude = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return f"Metadata for {str(self.photo)}"
@@ -257,6 +275,7 @@ class Album(PublicEntity):
         verbose_name="Photos"
     )
     parent = models.ForeignKey("Album", on_delete=models.SET_NULL, null=True, blank=True, related_name="children")
+    custom_attributes = models.JSONField(default=dict, blank=True)
 
     def get_ordered_photos(self, public_only: bool = False):
         qs = self._photos.all()

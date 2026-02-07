@@ -1,0 +1,71 @@
+{% comment %}
+Base map template for Leaflet maps with OSM and ESRI layers.
+Params:
+- latitude: initial latitude (default: 0)
+- longitude: initial longitude (default: 0)
+- zoom: initial zoom level (default: 2)
+- locked: if true, disables map panning/zooming interaction (default: false)
+- show_zoom_control: if true, shows zoom +/- buttons (default: false, independent of locked)
+- id: html id for the map (default: 'map')
+- height: CSS height for the map container (default: 'h-64')
+{% endcomment %}
+{% block map_container %}
+<div id="{{ id|default:'map' }}" class="w-full {{ height|default:'h-64' }}"></div>
+{% endblock %}
+
+{% block script %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const mapId = '{{ id|default:'map' }}';
+        const lat = parseFloat('{{ latitude|default:0 }}');
+        const lng = parseFloat('{{ longitude|default:0 }}');
+        const zoom = parseInt('{{ zoom|default:2 }}');
+        const locked = '{{ locked|default_if_none:"false" }}' === 'True' || '{{ locked|default_if_none:"false" }}' === 'true';
+        const showZoomControl = '{{ show_zoom_control|default_if_none:"false" }}' === 'True' || '{{ show_zoom_control|default_if_none:"false" }}' === 'true';
+        
+        const leafletMap = L.map(mapId, {
+            center: [lat, lng],
+            zoom: zoom,
+            zoomControl: showZoomControl,
+            dragging: !locked,
+            scrollWheelZoom: !locked,
+            doubleClickZoom: !locked,
+            boxZoom: !locked,
+            keyboard: !locked
+        });
+        
+        // OSM Streets
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        });
+        osm.addTo(leafletMap);
+        
+        // ESRI Satellite
+        const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: '© Esri'
+        });
+        
+        L.control.layers({ 'OSM Streets': osm, 'ESRI Satellite': esri }).addTo(leafletMap);
+        
+        if (locked) {
+            leafletMap.dragging.disable();
+            leafletMap.touchZoom.disable();
+            leafletMap.doubleClickZoom.disable();
+            leafletMap.scrollWheelZoom.disable();
+            leafletMap.boxZoom.disable();
+            leafletMap.keyboard.disable();
+            if (leafletMap.tap) leafletMap.tap.disable();
+            document.getElementById(mapId).style.cursor = 'default';
+        }
+        
+        // Expose map instance for extensions
+        window[mapId + '_leaflet'] = leafletMap;
+        
+        {% block map_init %}
+        // Override this block to add custom map initialization
+        {% endblock %}
+    });
+</script>
+{% endblock %}

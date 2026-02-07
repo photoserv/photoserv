@@ -43,6 +43,13 @@ Editing {{ object|default:object_type_name }}
             {% endfor %}
 
             {% include './partials/tag_input.html' %}
+
+            {% include 'partials/map/pin_input.html' with initial=form.initial.location locked=False zoom=10 %}
+            <p class="text-center">
+                Click once to unlock.
+                Geotag this photo or override the metadata location.
+                Remove (click) the pin to revert to metadata.
+            </p>
         </div>
 
         {% if integration_photo_form %}

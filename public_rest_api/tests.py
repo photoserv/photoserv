@@ -139,6 +139,52 @@ class APISerializerTestCase(TestCase):
         self.assertIn(str(self.album1.uuid), album_uuids)
         self.assertIn(str(self.album2.uuid), album_uuids)
     
+    def test_photo_detail_location_null_and_notnull(self):
+        # Initially should be null
+        url = f"/api/photos/{self.photo.uuid}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertIn("location", data)
+        self.assertIsNone(data["location"])
+
+        # Set location and test again
+        self.photo.latitude = 37.7749
+        self.photo.longitude = -122.4194
+        self.photo.hide_location = False
+        self.photo.save()
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertIn("location", data)
+        self.assertIsNotNone(data["location"])
+        self.assertEqual(data["location"]["latitude"], 37.7749)
+        self.assertEqual(data["location"]["longitude"], -122.4194)
+    
+    def test_photo_detail_location_hidden(self):
+        # Set location and hide it
+        self.photo.latitude = 37.7749
+        self.photo.longitude = -122.4194
+        self.photo.hide_location = True
+        self.photo.save()
+
+        url = f"/api/photos/{self.photo.uuid}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertIn("location", data)
+        self.assertIsNone(data["location"])
+
+        self.photo.hide_location = False
+        self.photo.save()
+        url = f"/api/photos/{self.photo.uuid}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertIn("location", data)
+        self.assertIsNotNone(data["location"])
+    
     # --- Album detail API test ---
     def test_album_detail_returns_ordered_photos(self):
         url = f"/api/albums/{self.album1.uuid}/"
@@ -283,6 +329,40 @@ class APISerializerTestCase(TestCase):
         url = f"/api/photos/{future_photo.uuid}/sizes/{public_test_size.slug}/"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_photo_custom_attributes_api_response(self):
+        # Default (should be {})
+        url = f"/api/photos/{self.photo.uuid}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertIn("custom_attributes", data)
+        self.assertEqual(data["custom_attributes"], {})
+
+        # Set arbitrary dict
+        self.photo.custom_attributes = {"foo": "bar", "num": 42}
+        self.photo.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(data["custom_attributes"], {"foo": "bar", "num": 42})
+
+    def test_album_custom_attributes_api_response(self):
+        # Default (should be {})
+        url = f"/api/albums/{self.album1.uuid}/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertIn("custom_attributes", data)
+        self.assertEqual(data["custom_attributes"], {})
+
+        # Set arbitrary dict
+        self.album1.custom_attributes = {"hello": "world", "x": 123}
+        self.album1.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        self.assertEqual(data["custom_attributes"], {"hello": "world", "x": 123})
 
 
 class APISizeDetailTestCase(TestCase):
@@ -524,3 +604,236 @@ class TestIncludePhotoSummarySizes(TestCase):
             size_slugs = [s["slug"] for s in photo.get("sizes", [])]
             self.assertIn(self.public_size.slug, size_slugs)
             self.assertNotIn(self.private_size.slug, size_slugs)
+
+class PhotoLocationQueryTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        
+        # Create API key
+        self.api_key = APIKey.create_key("location query test key")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.api_key}")
+        
+        # Create photos with various locations
+        # Photo 1: New York City (40.7128, -74.0060)
+        self.photo_nyc = Photo.objects.create(
+            title="NYC Photo",
+            raw_image=create_test_image_file("nyc.jpg"),
+            latitude=40.7128,
+            longitude=-74.0060,
+            hide_location=False
+        )
+        self.photo_nyc.update_published(update_model=True)
+        
+        # Photo 2: Los Angeles (34.0522, -118.2437)
+        self.photo_la = Photo.objects.create(
+            title="LA Photo",
+            raw_image=create_test_image_file("la.jpg"),
+            latitude=34.0522,
+            longitude=-118.2437,
+            hide_location=False
+        )
+        self.photo_la.update_published(update_model=True)
+        
+        # Photo 3: London (51.5074, -0.1278)
+        self.photo_london = Photo.objects.create(
+            title="London Photo",
+            raw_image=create_test_image_file("london.jpg"),
+            latitude=51.5074,
+            longitude=-0.1278,
+            hide_location=False
+        )
+        self.photo_london.update_published(update_model=True)
+        
+        # Photo 4: Tokyo (35.6762, 139.6503)
+        self.photo_tokyo = Photo.objects.create(
+            title="Tokyo Photo",
+            raw_image=create_test_image_file("tokyo.jpg"),
+            latitude=35.6762,
+            longitude=139.6503,
+            hide_location=False
+        )
+        self.photo_tokyo.update_published(update_model=True)
+        
+        # Photo 5: Hidden location (should never appear in filtered results)
+        self.photo_hidden = Photo.objects.create(
+            title="Hidden Location Photo",
+            raw_image=create_test_image_file("hidden.jpg"),
+            latitude=40.0,
+            longitude=-75.0,
+            hide_location=True
+        )
+        self.photo_hidden.update_published(update_model=True)
+        
+        # Photo 6: No location (should never appear in filtered results)
+        self.photo_no_location = Photo.objects.create(
+            title="No Location Photo",
+            raw_image=create_test_image_file("no_location.jpg"),
+            latitude=None,
+            longitude=None,
+            hide_location=False
+        )
+        self.photo_no_location.update_published(update_model=True)
+    
+    def test_no_filters_returns_all_photos(self):
+        """Without any filters, all published photos should be returned."""
+        response = self.client.get("/api/photos/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        self.assertEqual(len(photo_uuids), 6)
+    
+    def test_latitude_filter_only(self):
+        """Filter by latitude bounds (30-45 degrees) - should get NYC and LA."""
+        url = "/api/photos/?latitude_lower_bound=30&latitude_upper_bound=45"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertIn(str(self.photo_nyc.uuid), photo_uuids)
+        self.assertIn(str(self.photo_la.uuid), photo_uuids)
+        self.assertIn(str(self.photo_tokyo.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_london.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_hidden.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_no_location.uuid), photo_uuids)
+    
+    def test_longitude_filter_only(self):
+        """Filter by longitude bounds (-120 to -70) - should get NYC and LA."""
+        url = "/api/photos/?longitude_lower_bound=-120&longitude_upper_bound=-70"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertIn(str(self.photo_nyc.uuid), photo_uuids)
+        self.assertIn(str(self.photo_la.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_london.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_tokyo.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_hidden.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_no_location.uuid), photo_uuids)
+    
+    def test_both_filters_active(self):
+        """Filter by both latitude and longitude - should get only NYC."""
+        url = "/api/photos/?latitude_lower_bound=39&latitude_upper_bound=42&longitude_lower_bound=-75&longitude_upper_bound=-73"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertIn(str(self.photo_nyc.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_la.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_london.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_tokyo.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_hidden.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_no_location.uuid), photo_uuids)
+    
+    def test_no_photos_meet_filter(self):
+        """Filter with bounds that don't match any photos."""
+        url = "/api/photos/?latitude_lower_bound=70&latitude_upper_bound=80"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        self.assertEqual(len(photo_uuids), 0)
+    
+    def test_swapped_bounds_impossible_range(self):
+        """Test with lower bound > upper bound (impossible range) - should return no results."""
+        url = "/api/photos/?latitude_lower_bound=45&latitude_upper_bound=30"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        self.assertEqual(len(photo_uuids), 0)
+    
+    def test_only_latitude_lower_bound_returns_400(self):
+        """Providing only latitude_lower_bound should return 400."""
+        url = "/api/photos/?latitude_lower_bound=30"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.json())
+    
+    def test_only_latitude_upper_bound_returns_400(self):
+        """Providing only latitude_upper_bound should return 400."""
+        url = "/api/photos/?latitude_upper_bound=45"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.json())
+    
+    def test_only_longitude_lower_bound_returns_400(self):
+        """Providing only longitude_lower_bound should return 400."""
+        url = "/api/photos/?longitude_lower_bound=-120"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.json())
+    
+    def test_only_longitude_upper_bound_returns_400(self):
+        """Providing only longitude_upper_bound should return 400."""
+        url = "/api/photos/?longitude_upper_bound=-70"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.json())
+    
+    def test_invalid_numeric_value_returns_400(self):
+        """Providing non-numeric values should return 400."""
+        url = "/api/photos/?latitude_lower_bound=abc&latitude_upper_bound=45"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.json())
+    
+    def test_hidden_location_excluded_from_results(self):
+        """Photos with hide_location=True should never appear in filtered results."""
+        # This filter would include the hidden photo's coordinates, but it should still be excluded
+        url = "/api/photos/?latitude_lower_bound=39&latitude_upper_bound=41&longitude_lower_bound=-76&longitude_upper_bound=-74"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertIn(str(self.photo_nyc.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_hidden.uuid), photo_uuids)
+    
+    def test_null_location_excluded_from_results(self):
+        """Photos without location data should never appear in filtered results."""
+        url = "/api/photos/?latitude_lower_bound=0&latitude_upper_bound=90"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertNotIn(str(self.photo_no_location.uuid), photo_uuids)
+    
+    def test_exact_boundary_match(self):
+        """Test that photos exactly on boundaries are included."""
+        # Set bounds to exactly match NYC coordinates
+        url = f"/api/photos/?latitude_lower_bound={self.photo_nyc.latitude}&latitude_upper_bound={self.photo_nyc.latitude}"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertIn(str(self.photo_nyc.uuid), photo_uuids)
+    
+    def test_negative_longitude_range(self):
+        """Test filtering across negative longitude values (Western hemisphere)."""
+        url = "/api/photos/?longitude_lower_bound=-180&longitude_upper_bound=0"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertIn(str(self.photo_nyc.uuid), photo_uuids)
+        self.assertIn(str(self.photo_la.uuid), photo_uuids)
+        self.assertIn(str(self.photo_london.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_tokyo.uuid), photo_uuids)
+    
+    def test_positive_longitude_range(self):
+        """Test filtering across positive longitude values (Eastern hemisphere)."""
+        url = "/api/photos/?longitude_lower_bound=1&longitude_upper_bound=180"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertNotIn(str(self.photo_nyc.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_la.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_london.uuid), photo_uuids)
+        self.assertIn(str(self.photo_tokyo.uuid), photo_uuids)
+    
+    def test_combine_with_include_sizes_parameter(self):
+        """Test that location filtering works alongside other parameters."""
+        url = "/api/photos/?latitude_lower_bound=30&latitude_upper_bound=45&include_sizes=true"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Should return photos with location filters applied
+        photo_uuids = [p['uuid'] for p in response.json()]
+        self.assertIn(str(self.photo_nyc.uuid), photo_uuids)
+        self.assertIn(str(self.photo_la.uuid), photo_uuids)

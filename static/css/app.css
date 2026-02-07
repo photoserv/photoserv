@@ -7,6 +7,7 @@
 @plugin "daisyui";
 @import "./theme.css";
 @import "./codemirror.css";
+@import 'leaflet/dist/leaflet.css';
 
 h2 {
     @apply text-3xl;

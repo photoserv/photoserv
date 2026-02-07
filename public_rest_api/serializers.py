@@ -15,7 +15,7 @@ class PhotoSizeSerializer(serializers.ModelSerializer):
 class PhotoMetadataSerializer(serializers.ModelSerializer):
     class Meta:
         model = PhotoMetadata
-        exclude = ['uuid', 'id', 'photo']
+        exclude = ['uuid', 'id', 'photo', "raw_latitude", "raw_longitude"]
 
 
 class AlbumSummarySerializer(serializers.ModelSerializer):
@@ -59,7 +59,7 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Album
-        fields = ["uuid", "title", "slug", "short_description", "description", "sort_method", "sort_descending", "photos", "parent", "children", "created_at", "updated_at"]
+        fields = ["uuid", "title", "slug", "short_description", "description", "sort_method", "sort_descending", "photos", "parent", "children", "custom_attributes", "created_at", "updated_at"]
 
     @extend_schema_field(PhotoSummarySerializer(many=True))
     def get_photos(self, obj):
@@ -88,20 +88,39 @@ class TagSerializer(serializers.ModelSerializer):
         return PhotoSummarySerializer(obj.photos.filter(_published=True), many=True, context=self.context).data
 
 
+class LocationSerializer(serializers.Serializer):
+    latitude = serializers.FloatField()
+    longitude = serializers.FloatField()
+
+
 class PhotoSerializer(serializers.ModelSerializer):
     metadata = PhotoMetadataSerializer(read_only=True)
     albums = AlbumSummarySerializer(many=True, read_only=True)
     tags = TagSummarySerializer(many=True, read_only=True)
     sizes = serializers.SerializerMethodField()
+    location = serializers.SerializerMethodField()
 
     @extend_schema_field(PhotoSizeSerializer(many=True))
     def get_sizes(self, obj):
         public_sizes = obj.sizes.filter(size__public=True)
         return PhotoSizeSerializer(public_sizes, many=True).data
+    
+    @extend_schema_field(LocationSerializer(allow_null=True))
+    def get_location(self, obj):
+        if obj.hide_location:
+            return None
+        if obj.latitude is not None and obj.longitude is not None:
+            return {
+                "latitude": obj.latitude,
+                "longitude": obj.longitude
+            }
+        return None
 
     class Meta:
         model = Photo
-        exclude = ['id', 'raw_image']
+        fields = [
+            "uuid", "title", "slug", "description", "custom_attributes", "publish_date", "albums", "tags", "metadata", "sizes", "location", "created_at", "updated_at"
+        ]
 
 
 class SizeSerializer(serializers.ModelSerializer):

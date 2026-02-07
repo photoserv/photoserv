@@ -6,6 +6,7 @@ from rest_framework.generics import GenericAPIView
 from api_key.authentication import APIKeyAuthentication
 from api_key.permissions import HasAPIKey
 from rest_framework.response import Response
+from rest_framework import status
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from .models import *
 
@@ -15,6 +16,38 @@ INCLUDE_SIZES_PARAM = OpenApiParameter(
     type=OpenApiTypes.BOOL,
     location=OpenApiParameter.QUERY,
     description='Include photo sizes in the response (default: false)',
+    required=False,
+)
+
+LATITUDE_LOWER_BOUND_PARAM = OpenApiParameter(
+    name='latitude_lower_bound',
+    type=OpenApiTypes.FLOAT,
+    location=OpenApiParameter.QUERY,
+    description='Minimum latitude for location filter (requires latitude_upper_bound)',
+    required=False,
+)
+
+LATITUDE_UPPER_BOUND_PARAM = OpenApiParameter(
+    name='latitude_upper_bound',
+    type=OpenApiTypes.FLOAT,
+    location=OpenApiParameter.QUERY,
+    description='Maximum latitude for location filter (requires latitude_lower_bound)',
+    required=False,
+)
+
+LONGITUDE_LOWER_BOUND_PARAM = OpenApiParameter(
+    name='longitude_lower_bound',
+    type=OpenApiTypes.FLOAT,
+    location=OpenApiParameter.QUERY,
+    description='Minimum longitude for location filter (requires longitude_upper_bound)',
+    required=False,
+)
+
+LONGITUDE_UPPER_BOUND_PARAM = OpenApiParameter(
+    name='longitude_upper_bound',
+    type=OpenApiTypes.FLOAT,
+    location=OpenApiParameter.QUERY,
+    description='Maximum longitude for location filter (requires longitude_lower_bound)',
     required=False,
 )
 
@@ -38,15 +71,108 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
             return PhotoSummarySerializer
         return PhotoSerializer
     
+    def get_queryset(self):
+        """
+        Filter photos by location bounds if provided.
+        """
+        queryset = super().get_queryset()
+        
+        # Get location bound parameters
+        lat_lower = self.request.query_params.get('latitude_lower_bound')
+        lat_upper = self.request.query_params.get('latitude_upper_bound')
+        lon_lower = self.request.query_params.get('longitude_lower_bound')
+        lon_upper = self.request.query_params.get('longitude_upper_bound')
+        
+        # Validate latitude bounds
+        if (lat_lower is not None) != (lat_upper is not None):
+            # Only one latitude bound provided
+            return queryset.none()  # Will trigger validation error in list()
+        
+        # Validate longitude bounds
+        if (lon_lower is not None) != (lon_upper is not None):
+            # Only one longitude bound provided
+            return queryset.none()  # Will trigger validation error in list()
+        
+        # Apply latitude filter if both bounds are provided
+        if lat_lower is not None and lat_upper is not None:
+            try:
+                lat_lower = float(lat_lower)
+                lat_upper = float(lat_upper)
+                queryset = queryset.filter(
+                    hide_location=False,
+                    latitude__isnull=False,
+                    latitude__gte=lat_lower,
+                    latitude__lte=lat_upper
+                )
+            except (ValueError, TypeError):
+                return queryset.none()  # Will trigger validation error in list()
+        
+        # Apply longitude filter if both bounds are provided
+        if lon_lower is not None and lon_upper is not None:
+            try:
+                lon_lower = float(lon_lower)
+                lon_upper = float(lon_upper)
+                queryset = queryset.filter(
+                    hide_location=False,
+                    longitude__isnull=False,
+                    longitude__gte=lon_lower,
+                    longitude__lte=lon_upper
+                )
+            except (ValueError, TypeError):
+                return queryset.none()  # Will trigger validation error in list()
+        
+        return queryset
+    
     @extend_schema(
-        parameters=[INCLUDE_SIZES_PARAM],
+        parameters=[
+            INCLUDE_SIZES_PARAM,
+            LATITUDE_LOWER_BOUND_PARAM,
+            LATITUDE_UPPER_BOUND_PARAM,
+            LONGITUDE_LOWER_BOUND_PARAM,
+            LONGITUDE_UPPER_BOUND_PARAM,
+        ],
         responses={200: PhotoSummarySerializer},
     )
     def list(self, request, *args, **kwargs):
         """
         List public photos.
         Optionally include sizes with ?include_sizes=true.
+        Optionally filter by location bounds (both lower and upper bounds required for each dimension).
         """
+        # Validate location parameters
+        lat_lower = request.query_params.get('latitude_lower_bound')
+        lat_upper = request.query_params.get('latitude_upper_bound')
+        lon_lower = request.query_params.get('longitude_lower_bound')
+        lon_upper = request.query_params.get('longitude_upper_bound')
+        
+        # Check for incomplete latitude bounds
+        if (lat_lower is not None) != (lat_upper is not None):
+            return Response(
+                {"error": "Both latitude_lower_bound and latitude_upper_bound must be provided together."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check for incomplete longitude bounds
+        if (lon_lower is not None) != (lon_upper is not None):
+            return Response(
+                {"error": "Both longitude_lower_bound and longitude_upper_bound must be provided together."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate numeric values
+        try:
+            if lat_lower is not None:
+                float(lat_lower)
+                float(lat_upper)
+            if lon_lower is not None:
+                float(lon_lower)
+                float(lon_upper)
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Location bounds must be valid numeric values."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         return super().list(request, *args, **kwargs)
 
 

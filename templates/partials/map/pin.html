@@ -1,0 +1,17 @@
+{% extends 'partials/map/base_map.html' %}
+
+{% comment %}
+Display a map with a marker at the specified location.
+Inherits all base_map.html params, plus:
+- title: Text to display when clicking the marker (default: shows lat/lng)
+
+Note: To show zoom controls on a locked map, pass both locked=True and show_zoom_control=True
+{% endcomment %}
+
+{% block map_init %}
+// Add marker to the map (lat/lng already available from parent scope)
+const markerTitle = `{{ title|default:''|escapejs }}`;
+const marker = L.marker([lat, lng]).addTo(leafletMap);
+const popupText = markerTitle ? markerTitle : `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+marker.bindPopup(popupText);
+{% endblock %}

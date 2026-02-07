@@ -727,3 +727,58 @@ class TestMigration0003(TestMigrations):
 
         # Extra check: all UUIDs are unique
         self.assertEqual(len(uuids), len(self.sizes))
+
+
+class PhotoLocationTests(TestCase):
+    def test_new_photo_with_location_defined(self):
+        photo = Photo.objects.create(
+            title="LocPhoto",
+            raw_image="raw.jpg",
+            latitude=12.34,
+            longitude=56.78
+        )
+        self.assertEqual(photo.latitude, 12.34)
+        self.assertEqual(photo.longitude, 56.78)
+
+        metadata = PhotoMetadata.objects.create(
+            photo=photo,
+            raw_latitude=2.0,
+            raw_longitude=2.0
+        )
+
+        photo.latitude = 5.5
+        photo.longitude = 6.6
+        photo.save()
+        photo.refresh_from_db()
+
+        self.assertEqual(photo.latitude, 5.5)
+        self.assertEqual(photo.longitude, 6.6)
+    
+    def test_photo_no_location_defined_initially(self):
+        photo = Photo.objects.create(
+            title="NoLocPhoto",
+            raw_image="raw.jpg"
+        )
+        self.assertIsNone(photo.latitude)
+        self.assertIsNone(photo.longitude)
+
+        metadata = PhotoMetadata.objects.create(
+            photo=photo,
+            raw_latitude=1.1,
+            raw_longitude=2.2
+        )
+
+        metadata.save()
+        photo.save()
+        photo.refresh_from_db()
+
+        self.assertEqual(photo.latitude, 1.1)
+        self.assertEqual(photo.longitude, 2.2)
+
+        photo.latitude = 3.3
+        photo.longitude = 4.4
+        photo.save()
+        photo.refresh_from_db()
+
+        self.assertEqual(photo.latitude, 3.3)
+        self.assertEqual(photo.longitude, 4.4)

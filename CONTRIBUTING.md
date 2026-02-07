@@ -81,10 +81,9 @@ Example:
 ## TODO (Wanted Contributions)
 
 * Query photos (photo table in UI) by any arbitrary fields and/or metadata
-* Dynamic entires-per-page for all tables.
 * Automatic albums based on photo data/metadata (e.g., camera model, location)
 * Real implementation of a dashboard (home app)?... This is very low priority.
-* Support for geotags, manual geotags, and a photo map
+* Photo map
 * Stylized error pages (404, 500, etc.)
 
 ## Project Structure

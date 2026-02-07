@@ -1,10 +1,11 @@
 {
   "scripts": {
+    "copy:leaflet": "mkdir -p static/css/images && cp -R node_modules/leaflet/dist/images/* static/css/images",
     "build:css": "tailwindcss -i ./static/css/app.css -o ./static/css/style.css --minify",
     "dev:css": "tailwindcss -i ./static/css/app.css -o ./static/css/style.css --watch",
     "build:js": "esbuild ./static/js/app.js --bundle --outfile=./static/js/bundle.js --minify",
     "dev:js": "esbuild ./static/js/app.js --bundle --outfile=./static/js/bundle.js --watch",
-    "build": "npm run build:css && npm run build:js"
+    "build": "npm run copy:leaflet && npm run build:css && npm run build:js"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.18",
@@ -14,10 +15,11 @@
   },
   "dependencies": {
     "@alpinejs/sort": "^3.15.6",
-    "alpinejs": "^3.15.8",
-    "@codemirror/view": "^6.39.12",
-    "@codemirror/state": "^6.5.4",
     "@codemirror/lang-json": "^6.0.1",
-    "codemirror": "^6.0.1"
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "^6.39.12",
+    "alpinejs": "^3.15.8",
+    "codemirror": "^6.0.1",
+    "leaflet": "^1.9.4"
   }
 }

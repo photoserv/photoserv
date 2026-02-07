@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.9.0](https://github.com/photoserv/photoserv/compare/0.8.0...0.9.0) (2026-02-07)
+
+
+### Features
+
+* Custom, user-defined attributes on photos and albums ([524ca61](https://github.com/photoserv/photoserv/commit/524ca618a0bccb4434e3f5b6e8c02992fd7a444e))
+* Photo geotagging ([524ca61](https://github.com/photoserv/photoserv/commit/524ca618a0bccb4434e3f5b6e8c02992fd7a444e))
+* Set entires per-page on tables ([4fda8ef](https://github.com/photoserv/photoserv/commit/4fda8ef5ff6a267182e60932c72684a50c4657d6))
+
+
+### Bug Fixes
+
+* Better form element spacing for many edit views. ([885cb46](https://github.com/photoserv/photoserv/commit/885cb462247cee998fe4ef743a7554dff7a49b1a))
+* Improve image thumbnail formatting in photo list ([aef464d](https://github.com/photoserv/photoserv/commit/aef464db00bc2d0c355d52b826c61ef623a4833c))
+* Improve object list header buttons layout on mobile. ([a1c474e](https://github.com/photoserv/photoserv/commit/a1c474eae9e26d000d144bed412e3db1547f0ce0))
+
+
+### Dependencies
+
+* **js:** bump @alpinejs/sort from 3.15.3 to 3.15.6 ([5747da5](https://github.com/photoserv/photoserv/commit/5747da525fe382d63b0f13d4c268fd8e971ff6cc))
+* **js:** bump @codemirror/state from 6.5.3 to 6.5.4 ([bc43780](https://github.com/photoserv/photoserv/commit/bc43780c1e80bba38151fd6aa38bccb74e52d643))
+* **js:** bump @codemirror/view from 6.39.7 to 6.39.12 ([25f05e5](https://github.com/photoserv/photoserv/commit/25f05e51dba18f792d417418afee7d5e6b39f396))
+* **js:** bump @tailwindcss/cli from 4.1.11 to 4.1.18 ([1414363](https://github.com/photoserv/photoserv/commit/14143634533b32a3f2ef1ebe1167444fd35ecf27))
+* **js:** bump alpinejs from 3.15.3 to 3.15.6 ([4e412ab](https://github.com/photoserv/photoserv/commit/4e412abfe0cc8f2e118b48c210d0daff94dfc425))
+* **python:** bump celery from 5.5.3 to 5.6.2 ([5d4f6fd](https://github.com/photoserv/photoserv/commit/5d4f6fdcbe4824765a3e9f58ab3cebf844a9fe6b))
+* **python:** bump django-crispy-forms from 2.4 to 2.5 ([d6fbe77](https://github.com/photoserv/photoserv/commit/d6fbe77374a550068523ca4c3fd8e5cf1cbd6428))
+* **python:** bump gunicorn from 23.0.0 to 24.1.1 ([d2c8cea](https://github.com/photoserv/photoserv/commit/d2c8ceaad30a0fee21e205db1cc8ba63972e53aa))
+* **python:** update pillow requirement from &lt;=12.0.0 to &lt;=12.1.0 ([1c124b7](https://github.com/photoserv/photoserv/commit/1c124b7c0d1eb189b6f9c841cdff433c5fd410fc))
+
 ## [0.8.0](https://github.com/photoserv/photoserv/compare/0.7.7...0.8.0) (2026-01-18)
 
 

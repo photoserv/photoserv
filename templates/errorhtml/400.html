@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}400 Bad Request{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-4">
+    <h2>400 Bad Request</h2>
+    <p class="text-center">The server could not understand the request because it was malformed or invalid.</p>
+    <div class="flex justify-center">
+        <button type="button" class="btn btn-primary" onclick="history.back()">Back</button>
+    </div>
+</div>
+{% endblock %}

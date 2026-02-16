@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}404 Not Found{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-4">
+    <h2>404 Not Found</h2>
+    <p class="text-center">The requested page or resource could not be found on this server.</p>
+    <div class="flex justify-center">
+        <button type="button" class="btn btn-primary" onclick="history.back()">Back</button>
+    </div>
+</div>
+{% endblock %}

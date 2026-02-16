@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "iam",
     "job_overview",
     "integration",
+    "errorhtml",
 
     'django.contrib.admin',
     'django.contrib.auth',

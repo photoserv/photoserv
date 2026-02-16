@@ -24,7 +24,13 @@ from home.urls import urlpatterns as home_urls
 from job_overview.urls import urlpatterns as job_overview_urls
 from integration.urls import urlpatterns as integration_urls
 from drf_spectacular.views import SpectacularSwaggerView, SpectacularJSONAPIView
+from errorhtml import views as error_views
 from .settings import DEBUG
+
+handler400 = error_views.error_400
+handler403 = error_views.error_403
+handler404 = error_views.error_404
+handler500 = error_views.error_500
 
 urlpatterns = [
     path("api/", include(api_urls)),

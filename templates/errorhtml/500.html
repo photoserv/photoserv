@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}500 Internal Server Error{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-4">
+    <h2>500 Internal Server Error</h2>
+    <p class="text-center">The server encountered an unexpected condition that prevented it from completing the request.</p>
+    <div class="flex justify-center">
+        <button type="button" class="btn btn-primary" onclick="history.back()">Back</button>
+    </div>
+</div>
+{% endblock %}

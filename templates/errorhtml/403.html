@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}403 Forbidden{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-4">
+    <h2>403 Forbidden</h2>
+    <p class="text-center">The server understood the request but refuses to authorize access to this resource.</p>
+    <div class="flex justify-center">
+        <button type="button" class="btn btn-primary" onclick="history.back()">Back</button>
+    </div>
+</div>
+{% endblock %}

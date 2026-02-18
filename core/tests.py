@@ -165,6 +165,85 @@ class PhotoFormTests(TestCase):
         # Verify update_published was called with correct arguments
         # Note: update_published is called during Photo.save() when is_new=False
         mock_update_published.assert_called_with(dispatch_signals=True)
+    
+    @mock.patch("core.tasks.photo_replace_image.delay_on_commit")
+    @mock.patch("django.core.files.storage.FileSystemStorage.save")
+    @mock.patch("PIL.Image.open")
+    def test_photo_image_replaced(self, mock_image_open, mock_storage_save, mock_photo_replace_image):
+        """Test that replacing a photo's image triggers photo_replace_image task"""
+        from .forms import PhotoForm
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        
+        # Mock PIL Image.open to avoid actual image validation
+        mock_image_open.return_value.verify.return_value = None
+        mock_image_open.return_value.size = (100, 100)
+        mock_image_open.return_value.format = 'JPEG'
+        
+        # Mock storage save to return different filenames
+        mock_storage_save.side_effect = ['original_image.jpg', 'replaced_image.jpg']
+        
+        # Create an existing photo
+        original_image = SimpleUploadedFile(
+            name='original.jpg',
+            content=b'original fake image content',
+            content_type='image/jpeg'
+        )
+        
+        photo = Photo.objects.create(
+            title="Photo to Replace",
+            raw_image=original_image
+        )
+        
+        # Reset mock to clear creation calls
+        mock_photo_replace_image.reset_mock()
+        
+        # Test 1: Update photo WITHOUT replacing image - task should NOT be called
+        form_data = {
+            'title': 'Updated Title Only',
+            'description': 'Updated description',
+            'slug': photo.slug,
+            'hidden': False,
+        }
+        
+        form = PhotoForm(data=form_data, instance=photo)
+        self.assertTrue(form.is_valid(), form.errors)
+        
+        form.save(commit=True)
+        
+        # Verify photo_replace_image was NOT called
+        mock_photo_replace_image.assert_not_called()
+        
+        # Reset mock for next test
+        mock_photo_replace_image.reset_mock()
+        
+        # Test 2: Update photo WITH new image - task SHOULD be called
+        # Capture the old image path BEFORE creating the form
+        photo.refresh_from_db()
+        old_path = photo.raw_image.path
+        
+        new_image = SimpleUploadedFile(
+            name='new_image.jpg',
+            content=b'new fake image content',
+            content_type='image/jpeg'
+        )
+        
+        form_data = {
+            'title': 'Updated with New Image',
+            'description': 'Updated with new image',
+            'slug': photo.slug,
+            'hidden': False,
+        }
+        
+        form = PhotoForm(data=form_data, files={'raw_image': new_image}, instance=photo)
+        self.assertTrue(form.is_valid(), form.errors)
+        
+        form.save(commit=True)
+        
+        # Verify photo_replace_image WAS called with photo id and old path
+        mock_photo_replace_image.assert_called_once()
+        call_args = mock_photo_replace_image.call_args
+        self.assertEqual(call_args[0][0], photo.id)
+        self.assertEqual(call_args[0][1], old_path)
 
 
 class PhotoSlugTests(TestCase):

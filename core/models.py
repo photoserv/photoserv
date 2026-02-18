@@ -107,13 +107,28 @@ class Photo(PublicEntity):
         if not self.slug:
             self.slug = self.calculate_slug()
         is_new = self.pk is None
+        
+        # Detect image replacement for existing photos
+        image_replaced = False
+        old_image_path = None
+        if not is_new:
+            try:
+                old_photo = Photo.objects.get(pk=self.pk)
+                # Check if the image field has changed
+                if old_photo.raw_image and old_photo.raw_image != self.raw_image:
+                    image_replaced = True
+                    old_image_path = old_photo.raw_image.path if old_photo.raw_image else None
+                    self.latitude = None
+                    self.longitude = None
+            except Photo.DoesNotExist:
+                pass
 
         if not is_new:
             # Recalculate published status on updates
             self.update_published(dispatch_signals=True)
 
             # If the lat/long is null, fetch from metadata if available
-            if (self.latitude is None or self.longitude is None) and hasattr(self, "metadata"):
+            if not (not is_new and image_replaced) and (self.latitude is None or self.longitude is None) and hasattr(self, "metadata"):
                 if self.metadata.raw_latitude is not None and self.metadata.raw_longitude is not None:
                     self.latitude = self.metadata.raw_latitude
                     self.longitude = self.metadata.raw_longitude
@@ -123,6 +138,9 @@ class Photo(PublicEntity):
         if schedule_followup_tasks and is_new:
             # Generate other sizes via Celery task
             tasks.post_photo_create.delay_on_commit(self.id)
+        elif image_replaced:
+            # Image was replaced - trigger replacement task
+            tasks.photo_replace_image.delay_on_commit(self.id, old_image_path)
     
     def assign_albums(self, albums):
         # Remove unselected

@@ -203,6 +203,49 @@ def generate_photo_metadata(photo_id):
 
 
 @shared_task
+def photo_replace_image(photo_id, old_image_path):
+    """
+    Handle replacing a photo's image file.
+    Deletes old file and all associated PhotoSize objects/files,
+    then regenerates everything.
+    """
+    try:
+        photo = models.Photo.objects.get(id=photo_id)
+    except models.Photo.DoesNotExist:
+        return f"Photo with id {photo_id} does not exist."
+    
+    # Delete old PhotoSize objects and their files (must loop to handle file deletion)
+    photo_sizes = models.PhotoSize.objects.filter(photo=photo)
+    deleted_count = 0
+    for photo_size in photo_sizes:
+        if photo_size.image:
+            try:
+                os.remove(photo_size.image.path)
+            except (FileNotFoundError, ValueError):
+                pass
+        photo_size.delete()
+        deleted_count += 1
+    
+    # Delete the old raw image file
+    if old_image_path:
+        try:
+            os.remove(old_image_path)
+        except (FileNotFoundError, ValueError):
+            pass
+    
+    # Delete old metadata (if exists)
+    try:
+        photo.metadata.delete()
+    except models.PhotoMetadata.DoesNotExist:
+        pass
+    
+    # Regenerate everything (called directly, not as delayed task)
+    post_photo_create(photo_id)
+    
+    return f"Replaced image for photo {photo_id}, deleted {deleted_count} old sizes and regenerated."
+
+
+@shared_task
 def post_photo_create(photo_id):
     # Run these synchronously after photo creation
     generate_photo_metadata(photo_id)

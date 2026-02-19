@@ -1,0 +1,59 @@
+{% load crispy_forms_tags %}
+
+<div class="collapse collapse-arrow bg-base-200 mb-4">
+    <input type="checkbox" /> 
+    <div class="collapse-title text-xl font-medium">
+        Filter Photos
+    </div>
+    <div class="collapse-content">
+        <form method="get">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Basic Photo fields -->
+                {{ filter.form.title|as_crispy_field }}
+                {{ filter.form.slug|as_crispy_field }}
+                {{ filter.form.description|as_crispy_field }}
+                
+                <!-- Date ranges -->
+                {{ filter.form.publish_date|as_crispy_field }}
+                {{ filter.form.capture_date|as_crispy_field }}
+                
+                <!-- Camera metadata -->
+                {{ filter.form.camera_make|as_crispy_field }}
+                {{ filter.form.camera_model|as_crispy_field }}
+                {{ filter.form.lens_model|as_crispy_field }}
+                {{ filter.form.exposure_program|as_crispy_field }}
+                {{ filter.form.flash|as_crispy_field }}
+                {{ filter.form.copyright|as_crispy_field }}
+                
+                <!-- Numeric ranges -->
+                {{ filter.form.rating|as_crispy_field }}
+                {{ filter.form.aperture|as_crispy_field }}
+                {{ filter.form.focal_length|as_crispy_field }}
+                {{ filter.form.focal_length_35mm|as_crispy_field }}
+                {{ filter.form.iso|as_crispy_field }}
+                {{ filter.form.shutter_speed|as_crispy_field }}
+                {{ filter.form.exposure_compensation|as_crispy_field }}
+            </div>
+            
+            <!-- Albums and Tags in nested accordion -->
+            <div class="collapse collapse-arrow bg-base-300 mt-4">
+                <input type="checkbox" /> 
+                <div class="collapse-title font-medium">
+                    Albums & Tags
+                </div>
+                <div class="collapse-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {{ filter.form.albums | as_crispy_field }}
+                        {{ filter.form.tags | as_crispy_field }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit buttons -->
+            <div class="flex gap-2 justify-end mt-4">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{% url 'photo-list' %}" class="btn btn-ghost">Clear Filters</a>
+            </div>
+        </form>
+    </div>
+</div>

@@ -8,6 +8,7 @@ import io
 from PIL import Image
 from django.utils import timezone
 from datetime import timedelta
+from .filters import PhotoFilterAPI
 
 
 def create_test_image_file(filename="test.jpg"):
@@ -683,7 +684,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_latitude_filter_only(self):
         """Filter by latitude bounds (30-45 degrees) - should get NYC and LA."""
-        url = "/api/photos/?latitude_lower_bound=30&latitude_upper_bound=45"
+        url = "/api/photos/?latitude_min=30&latitude_max=45"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -697,7 +698,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_longitude_filter_only(self):
         """Filter by longitude bounds (-120 to -70) - should get NYC and LA."""
-        url = "/api/photos/?longitude_lower_bound=-120&longitude_upper_bound=-70"
+        url = "/api/photos/?longitude_min=-120&longitude_max=-70"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -711,7 +712,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_both_filters_active(self):
         """Filter by both latitude and longitude - should get only NYC."""
-        url = "/api/photos/?latitude_lower_bound=39&latitude_upper_bound=42&longitude_lower_bound=-75&longitude_upper_bound=-73"
+        url = "/api/photos/?latitude_min=39&latitude_max=42&longitude_min=-75&longitude_max=-73"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -725,7 +726,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_no_photos_meet_filter(self):
         """Filter with bounds that don't match any photos."""
-        url = "/api/photos/?latitude_lower_bound=70&latitude_upper_bound=80"
+        url = "/api/photos/?latitude_min=70&latitude_max=80"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -733,43 +734,43 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_swapped_bounds_impossible_range(self):
         """Test with lower bound > upper bound (impossible range) - should return no results."""
-        url = "/api/photos/?latitude_lower_bound=45&latitude_upper_bound=30"
+        url = "/api/photos/?latitude_min=45&latitude_max=30"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
         self.assertEqual(len(photo_uuids), 0)
     
-    def test_only_latitude_lower_bound_returns_400(self):
-        """Providing only latitude_lower_bound should return 400."""
-        url = "/api/photos/?latitude_lower_bound=30"
+    def test_only_latitude_min_returns_400(self):
+        """Providing only latitude_min should return 400."""
+        url = "/api/photos/?latitude_min=30"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
     
-    def test_only_latitude_upper_bound_returns_400(self):
-        """Providing only latitude_upper_bound should return 400."""
-        url = "/api/photos/?latitude_upper_bound=45"
+    def test_only_latitude_max_returns_400(self):
+        """Providing only latitude_max should return 400."""
+        url = "/api/photos/?latitude_max=45"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
     
-    def test_only_longitude_lower_bound_returns_400(self):
-        """Providing only longitude_lower_bound should return 400."""
-        url = "/api/photos/?longitude_lower_bound=-120"
+    def test_only_longitude_min_returns_400(self):
+        """Providing only longitude_min should return 400."""
+        url = "/api/photos/?longitude_min=-120"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
     
-    def test_only_longitude_upper_bound_returns_400(self):
-        """Providing only longitude_upper_bound should return 400."""
-        url = "/api/photos/?longitude_upper_bound=-70"
+    def test_only_longitude_max_returns_400(self):
+        """Providing only longitude_max should return 400."""
+        url = "/api/photos/?longitude_max=-70"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
     
     def test_invalid_numeric_value_returns_400(self):
         """Providing non-numeric values should return 400."""
-        url = "/api/photos/?latitude_lower_bound=abc&latitude_upper_bound=45"
+        url = "/api/photos/?latitude_min=abc&latitude_max=45"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
@@ -777,7 +778,7 @@ class PhotoLocationQueryTestCase(TestCase):
     def test_hidden_location_excluded_from_results(self):
         """Photos with hide_location=True should never appear in filtered results."""
         # This filter would include the hidden photo's coordinates, but it should still be excluded
-        url = "/api/photos/?latitude_lower_bound=39&latitude_upper_bound=41&longitude_lower_bound=-76&longitude_upper_bound=-74"
+        url = "/api/photos/?latitude_min=39&latitude_max=41&longitude_min=-76&longitude_max=-74"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -787,7 +788,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_null_location_excluded_from_results(self):
         """Photos without location data should never appear in filtered results."""
-        url = "/api/photos/?latitude_lower_bound=0&latitude_upper_bound=90"
+        url = "/api/photos/?latitude_min=0&latitude_max=90"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -797,7 +798,7 @@ class PhotoLocationQueryTestCase(TestCase):
     def test_exact_boundary_match(self):
         """Test that photos exactly on boundaries are included."""
         # Set bounds to exactly match NYC coordinates
-        url = f"/api/photos/?latitude_lower_bound={self.photo_nyc.latitude}&latitude_upper_bound={self.photo_nyc.latitude}"
+        url = f"/api/photos/?latitude_min={self.photo_nyc.latitude}&latitude_max={self.photo_nyc.latitude}"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -806,7 +807,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_negative_longitude_range(self):
         """Test filtering across negative longitude values (Western hemisphere)."""
-        url = "/api/photos/?longitude_lower_bound=-180&longitude_upper_bound=0"
+        url = "/api/photos/?longitude_min=-180&longitude_max=0"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -818,7 +819,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_positive_longitude_range(self):
         """Test filtering across positive longitude values (Eastern hemisphere)."""
-        url = "/api/photos/?longitude_lower_bound=1&longitude_upper_bound=180"
+        url = "/api/photos/?longitude_min=1&longitude_max=180"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -828,12 +829,186 @@ class PhotoLocationQueryTestCase(TestCase):
         self.assertNotIn(str(self.photo_london.uuid), photo_uuids)
         self.assertIn(str(self.photo_tokyo.uuid), photo_uuids)
     
+    def test_antimeridian_wraparound_longitude(self):
+        """Test filtering across the antimeridian (+/-180deg) where min > max.
+        
+        A range of 160deg to -160deg (i.e. min=160, max=-160) should match Tokyo
+        (139.69degE is outside this range) but actually Tokyo at 139.69deg is NOT
+        in [160, 180] union [-180, -160]. Only things east of 160degE or west of 160degW.
+        
+        Use 130deg to -170deg to capture Tokyo (139.69degE) via the eastern side.
+        NYC (-74deg), LA (-118deg), London (-0.13deg) are all outside [130, 180] union [-180, -170].
+        """
+        url = "/api/photos/?longitude_min=130&longitude_max=-170"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertIn(str(self.photo_tokyo.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_nyc.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_la.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_london.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_hidden.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_no_location.uuid), photo_uuids)
+    
     def test_combine_with_include_sizes_parameter(self):
         """Test that location filtering works alongside other parameters."""
-        url = "/api/photos/?latitude_lower_bound=30&latitude_upper_bound=45&include_sizes=true"
+        url = "/api/photos/?latitude_min=30&latitude_max=45&include_sizes=true"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Should return photos with location filters applied
         photo_uuids = [p['uuid'] for p in response.json()]
         self.assertIn(str(self.photo_nyc.uuid), photo_uuids)
         self.assertIn(str(self.photo_la.uuid), photo_uuids)
+
+
+class PhotoFilterTests(TestCase):
+    
+    def setUp(self):
+        """Set up test photos, albums, tags with various metadata for filtering"""
+        
+        # Create albums
+        self.album1 = Album.objects.create(title="Nature Album")
+        self.album2 = Album.objects.create(title="Urban Album")
+        self.album3 = Album.objects.create(title="People Album")
+        
+        # Create tags
+        self.tag_nature = Tag.objects.create(name="nature")
+        self.tag_city = Tag.objects.create(name="city")
+        self.tag_portrait = Tag.objects.create(name="portrait")
+        
+        # Photo 1: Canon, rating 5, ISO 800, in album1, tag nature
+        self.photo1 = Photo.objects.create(
+            title="Sunset in Nature",
+            raw_image=create_test_image_file("photo1.jpg")
+        )
+        self.photo1.update_published(update_model=True)
+        PhotoMetadata.objects.create(
+            photo=self.photo1,
+            camera_make="Canon",
+            iso=800,
+            rating=5
+        )
+        self.photo1.assign_albums([self.album1])
+        PhotoTag.objects.create(photo=self.photo1, tag=self.tag_nature)
+        
+        # Photo 2: Nikon, rating 3, ISO 400, in album2, tag city
+        self.photo2 = Photo.objects.create(
+            title="City Lights",
+            raw_image=create_test_image_file("photo2.jpg")
+        )
+        self.photo2.update_published(update_model=True)
+        PhotoMetadata.objects.create(
+            photo=self.photo2,
+            camera_make="Nikon",
+            iso=400,
+            rating=3
+        )
+        self.photo2.assign_albums([self.album2])
+        PhotoTag.objects.create(photo=self.photo2, tag=self.tag_city)
+        
+        # Photo 3: Sony, rating 4, ISO 100, in album3, tags city and portrait
+        self.photo3 = Photo.objects.create(
+            title="Street Portrait",
+            raw_image=create_test_image_file("photo3.jpg")
+        )
+        self.photo3.update_published(update_model=True)
+        PhotoMetadata.objects.create(
+            photo=self.photo3,
+            camera_make="Sony",
+            iso=100,
+            rating=4
+        )
+        self.photo3.assign_albums([self.album3])
+        PhotoTag.objects.create(photo=self.photo3, tag=self.tag_city)
+        PhotoTag.objects.create(photo=self.photo3, tag=self.tag_portrait)
+        
+        # Photo 4: Canon, rating 2, ISO 1600, in album1 and album3, tag nature
+        self.photo4 = Photo.objects.create(
+            title="Forest Scene",
+            raw_image=create_test_image_file("photo4.jpg")
+        )
+        self.photo4.update_published(update_model=True)
+        PhotoMetadata.objects.create(
+            photo=self.photo4,
+            camera_make="Canon",
+            iso=1600,
+            rating=2
+        )
+        self.photo4.assign_albums([self.album1, self.album3])
+        PhotoTag.objects.create(photo=self.photo4, tag=self.tag_nature)
+
+    def test_filter_api_by_album_uuid(self):
+        """Test API filtering by album UUIDs"""
+        
+        # Single album UUID
+        f = PhotoFilterAPI(data={'albums': [str(self.album1.uuid)]}, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 2)
+        self.assertIn(self.photo1, f.qs)
+        self.assertIn(self.photo4, f.qs)
+        
+        # Multiple album UUIDs
+        f = PhotoFilterAPI(data={
+            'albums': [str(self.album1.uuid), str(self.album3.uuid)]
+        }, queryset=Photo.objects.all())
+        self.assertGreaterEqual(f.qs.count(), 2)
+    
+    def test_filter_api_by_tag_uuid(self):
+        """Test API filtering by tag UUIDs"""
+        
+        # Single tag UUID
+        f = PhotoFilterAPI(data={'tags': [str(self.tag_nature.uuid)]}, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 2)
+        self.assertIn(self.photo1, f.qs)
+        self.assertIn(self.photo4, f.qs)
+        
+        # Multiple tag UUIDs
+        f = PhotoFilterAPI(data={
+            'tags': [str(self.tag_city.uuid), str(self.tag_portrait.uuid)]
+        }, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 2)
+        self.assertIn(self.photo2, f.qs)
+        self.assertIn(self.photo3, f.qs)
+    
+    def test_combined_filters(self):
+        """Test combining multiple filters"""
+        
+        # Canon cameras with rating >= 4
+        f = PhotoFilterAPI(data={
+            'camera_make': 'Canon',
+            'rating_min': '4'
+        }, queryset=Photo.objects.all())
+        
+        self.assertEqual(f.qs.count(), 1)
+        self.assertIn(self.photo1, f.qs)
+        
+        # City tag with ISO < 500
+        f = PhotoFilterAPI(data={
+            'tags': str(self.tag_city.uuid),
+            'iso_max': '500'
+        }, queryset=Photo.objects.all())
+        
+        self.assertEqual(f.qs.count(), 2)
+        self.assertIn(self.photo2, f.qs)  # ISO 400
+        self.assertIn(self.photo3, f.qs)  # ISO 100
+    
+    def test_filter_with_no_criteria(self):
+        """Test that empty filter returns all photos"""
+        
+        f = PhotoFilterAPI(data={}, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 4)
+    
+    def test_filter_with_no_results(self):
+        """Test filters that match no photos"""
+        
+        # ISO range that no photo has
+        f = PhotoFilterAPI(data={
+            'iso_min': '5000',
+            'iso_max': '10000'
+        }, queryset=Photo.objects.all())
+        
+        self.assertEqual(f.qs.count(), 0)
+        
+        # Non-existent camera make
+        f = PhotoFilterAPI(data={'camera_make': 'NonExistentBrand'}, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 0)

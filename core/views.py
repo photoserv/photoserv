@@ -3,10 +3,12 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django.views.generic import DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django_tables2.views import SingleTableView
+from django_filters.views import FilterView
 from django.db.models import Count
 from .models import *
 from .forms import *
 from .tables import *
+from .filters import PhotoFilter
 from .mixins import CRUDGenericMixin
 from django.http import FileResponse, Http404
 import calendar
@@ -22,12 +24,17 @@ class PhotoMixin(CRUDGenericMixin):
     formset_support = True
 
 
-class PhotoListView(PhotoMixin, SingleTableView):
+class PhotoListView(PhotoMixin, FilterView, SingleTableView):
     model = Photo
     table_class = PhotoTable
     template_name = "core/photo_list.html"
+    filterset_class = PhotoFilter
 
     paginate_by = 10
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.select_related('metadata').prefetch_related('albums', 'tags')
 
 
 class PhotoDetailView(DetailView):

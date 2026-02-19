@@ -71,8 +71,11 @@ class PhotoListTable(tables.Table):
 class TagTable(tables.Table):
     name = tables.Column(linkify=True)
     photo_count = tables.Column(verbose_name="Photos")
+    uuid = tables.Column(attrs={
+        "td": {"class": "font-mono"}
+    })
 
     class Meta:
         model = Tag
-        fields = ("name", "photo_count")
+        fields = ("name", "photo_count", "uuid")
         order_by = ("name",)

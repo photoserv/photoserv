@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from core.models import Photo, Size
+from .filters import PhotoFilterAPI
 from .serializers import *
 from django.http import FileResponse, Http404
 from rest_framework.generics import GenericAPIView
@@ -7,6 +8,7 @@ from api_key.authentication import APIKeyAuthentication
 from api_key.permissions import HasAPIKey
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from .models import *
 
@@ -19,35 +21,53 @@ INCLUDE_SIZES_PARAM = OpenApiParameter(
     required=False,
 )
 
-LATITUDE_LOWER_BOUND_PARAM = OpenApiParameter(
-    name='latitude_lower_bound',
+ALBUMS_FILTER_PARAM = OpenApiParameter(
+    name='albums',
+    type=OpenApiTypes.UUID,
+    location=OpenApiParameter.QUERY,
+    description='Filter by album UUID(s)',
+    required=False,
+    many=True,
+)
+
+TAGS_FILTER_PARAM = OpenApiParameter(
+    name='tags',
+    type=OpenApiTypes.UUID,
+    location=OpenApiParameter.QUERY,
+    description='Filter by tag UUID(s)',
+    required=False,
+    many=True,
+)
+
+LATITUDE_MIN_PARAM = OpenApiParameter(
+    name='latitude_min',
     type=OpenApiTypes.FLOAT,
     location=OpenApiParameter.QUERY,
-    description='Minimum latitude for location filter (requires latitude_upper_bound)',
+    description='Minimum latitude for location filter (requires latitude_max)',
     required=False,
 )
 
-LATITUDE_UPPER_BOUND_PARAM = OpenApiParameter(
-    name='latitude_upper_bound',
+LATITUDE_MAX_PARAM = OpenApiParameter(
+    name='latitude_max',
     type=OpenApiTypes.FLOAT,
     location=OpenApiParameter.QUERY,
-    description='Maximum latitude for location filter (requires latitude_lower_bound)',
+    description='Maximum latitude for location filter (requires latitude_min)',
     required=False,
 )
 
-LONGITUDE_LOWER_BOUND_PARAM = OpenApiParameter(
-    name='longitude_lower_bound',
+LONGITUDE_MIN_PARAM = OpenApiParameter(
+    name='longitude_min',
     type=OpenApiTypes.FLOAT,
     location=OpenApiParameter.QUERY,
-    description='Minimum longitude for location filter (requires longitude_upper_bound)',
+    description='Minimum longitude for location filter (requires longitude_max)',
     required=False,
 )
 
-LONGITUDE_UPPER_BOUND_PARAM = OpenApiParameter(
-    name='longitude_upper_bound',
+LONGITUDE_MAX_PARAM = OpenApiParameter(
+    name='longitude_max',
     type=OpenApiTypes.FLOAT,
     location=OpenApiParameter.QUERY,
-    description='Maximum longitude for location filter (requires longitude_lower_bound)',
+    description='Maximum longitude for location filter (requires longitude_min)',
     required=False,
 )
 
@@ -65,6 +85,7 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [HasAPIKey]
     lookup_field = 'uuid'
     queryset = Photo.objects.filter(_published=True)
+    filterset_class = PhotoFilterAPI
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -73,15 +94,16 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """
-        Filter photos by location bounds if provided.
+        Filter photos by location bounds and other filters using PhotoFilterAPI.
         """
         queryset = super().get_queryset()
+        queryset = queryset.select_related('metadata').prefetch_related('albums', 'tags')
         
         # Get location bound parameters
-        lat_lower = self.request.query_params.get('latitude_lower_bound')
-        lat_upper = self.request.query_params.get('latitude_upper_bound')
-        lon_lower = self.request.query_params.get('longitude_lower_bound')
-        lon_upper = self.request.query_params.get('longitude_upper_bound')
+        lat_lower = self.request.query_params.get('latitude_min')
+        lat_upper = self.request.query_params.get('latitude_max')
+        lon_lower = self.request.query_params.get('longitude_min')
+        lon_upper = self.request.query_params.get('longitude_max')
         
         # Validate latitude bounds
         if (lat_lower is not None) != (lat_upper is not None):
@@ -112,12 +134,22 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
             try:
                 lon_lower = float(lon_lower)
                 lon_upper = float(lon_upper)
-                queryset = queryset.filter(
-                    hide_location=False,
-                    longitude__isnull=False,
-                    longitude__gte=lon_lower,
-                    longitude__lte=lon_upper
-                )
+                if lon_lower <= lon_upper:
+                    # Normal range
+                    queryset = queryset.filter(
+                        hide_location=False,
+                        longitude__isnull=False,
+                        longitude__gte=lon_lower,
+                        longitude__lte=lon_upper
+                    )
+                else:
+                    # Wraparound range crossing the antimeridian (±180°)
+                    queryset = queryset.filter(
+                        hide_location=False,
+                        longitude__isnull=False,
+                    ).filter(
+                        Q(longitude__gte=lon_lower) | Q(longitude__lte=lon_upper)
+                    )
             except (ValueError, TypeError):
                 return queryset.none()  # Will trigger validation error in list()
         
@@ -125,11 +157,13 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
     
     @extend_schema(
         parameters=[
+            ALBUMS_FILTER_PARAM,
+            TAGS_FILTER_PARAM,
             INCLUDE_SIZES_PARAM,
-            LATITUDE_LOWER_BOUND_PARAM,
-            LATITUDE_UPPER_BOUND_PARAM,
-            LONGITUDE_LOWER_BOUND_PARAM,
-            LONGITUDE_UPPER_BOUND_PARAM,
+            LATITUDE_MIN_PARAM,
+            LATITUDE_MAX_PARAM,
+            LONGITUDE_MIN_PARAM,
+            LONGITUDE_MAX_PARAM,
         ],
         responses={200: PhotoSummarySerializer},
     )
@@ -140,22 +174,22 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
         Optionally filter by location bounds (both lower and upper bounds required for each dimension).
         """
         # Validate location parameters
-        lat_lower = request.query_params.get('latitude_lower_bound')
-        lat_upper = request.query_params.get('latitude_upper_bound')
-        lon_lower = request.query_params.get('longitude_lower_bound')
-        lon_upper = request.query_params.get('longitude_upper_bound')
+        lat_lower = request.query_params.get('latitude_min')
+        lat_upper = request.query_params.get('latitude_max')
+        lon_lower = request.query_params.get('longitude_min')
+        lon_upper = request.query_params.get('longitude_max')
         
         # Check for incomplete latitude bounds
         if (lat_lower is not None) != (lat_upper is not None):
             return Response(
-                {"error": "Both latitude_lower_bound and latitude_upper_bound must be provided together."},
+                {"error": "Both latitude_min and latitude_max must be provided together."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         # Check for incomplete longitude bounds
         if (lon_lower is not None) != (lon_upper is not None):
             return Response(
-                {"error": "Both longitude_lower_bound and longitude_upper_bound must be provided together."},
+                {"error": "Both longitude_min and longitude_max must be provided together."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         

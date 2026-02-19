@@ -3,9 +3,19 @@
 {% block header_buttons %}
 
 
+<!-- Add stuff here to appear after the photo table -->
+
 <a href="{% url 'photo-calendar' %}" class="btn btn-secondary">
     Photo Calendar
 </a>
 
+
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+
+<!-- Filter Form -->
+{% include "core/partials/photo_filter_form.html" %}
 
 {% endblock %}

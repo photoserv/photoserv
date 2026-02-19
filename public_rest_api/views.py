@@ -38,35 +38,35 @@ TAGS_FILTER_PARAM = OpenApiParameter(
     many=True,
 )
 
-LATITUDE_LOWER_BOUND_PARAM = OpenApiParameter(
-    name='latitude_lower_bound',
+LATITUDE_MIN_PARAM = OpenApiParameter(
+    name='latitude_min',
     type=OpenApiTypes.FLOAT,
     location=OpenApiParameter.QUERY,
-    description='Minimum latitude for location filter (requires latitude_upper_bound)',
+    description='Minimum latitude for location filter (requires latitude_max)',
     required=False,
 )
 
-LATITUDE_UPPER_BOUND_PARAM = OpenApiParameter(
-    name='latitude_upper_bound',
+LATITUDE_MAX_PARAM = OpenApiParameter(
+    name='latitude_max',
     type=OpenApiTypes.FLOAT,
     location=OpenApiParameter.QUERY,
-    description='Maximum latitude for location filter (requires latitude_lower_bound)',
+    description='Maximum latitude for location filter (requires latitude_min)',
     required=False,
 )
 
-LONGITUDE_LOWER_BOUND_PARAM = OpenApiParameter(
-    name='longitude_lower_bound',
+LONGITUDE_MIN_PARAM = OpenApiParameter(
+    name='longitude_min',
     type=OpenApiTypes.FLOAT,
     location=OpenApiParameter.QUERY,
-    description='Minimum longitude for location filter (requires longitude_upper_bound)',
+    description='Minimum longitude for location filter (requires longitude_max)',
     required=False,
 )
 
-LONGITUDE_UPPER_BOUND_PARAM = OpenApiParameter(
-    name='longitude_upper_bound',
+LONGITUDE_MAX_PARAM = OpenApiParameter(
+    name='longitude_max',
     type=OpenApiTypes.FLOAT,
     location=OpenApiParameter.QUERY,
-    description='Maximum longitude for location filter (requires longitude_lower_bound)',
+    description='Maximum longitude for location filter (requires longitude_min)',
     required=False,
 )
 
@@ -99,10 +99,10 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = queryset.select_related('metadata').prefetch_related('albums', 'tags')
         
         # Get location bound parameters
-        lat_lower = self.request.query_params.get('latitude_lower_bound')
-        lat_upper = self.request.query_params.get('latitude_upper_bound')
-        lon_lower = self.request.query_params.get('longitude_lower_bound')
-        lon_upper = self.request.query_params.get('longitude_upper_bound')
+        lat_lower = self.request.query_params.get('latitude_min')
+        lat_upper = self.request.query_params.get('latitude_max')
+        lon_lower = self.request.query_params.get('longitude_min')
+        lon_upper = self.request.query_params.get('longitude_max')
         
         # Validate latitude bounds
         if (lat_lower is not None) != (lat_upper is not None):
@@ -149,10 +149,10 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
             ALBUMS_FILTER_PARAM,
             TAGS_FILTER_PARAM,
             INCLUDE_SIZES_PARAM,
-            LATITUDE_LOWER_BOUND_PARAM,
-            LATITUDE_UPPER_BOUND_PARAM,
-            LONGITUDE_LOWER_BOUND_PARAM,
-            LONGITUDE_UPPER_BOUND_PARAM,
+            LATITUDE_MIN_PARAM,
+            LATITUDE_MAX_PARAM,
+            LONGITUDE_MIN_PARAM,
+            LONGITUDE_MAX_PARAM,
         ],
         responses={200: PhotoSummarySerializer},
     )
@@ -163,22 +163,22 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
         Optionally filter by location bounds (both lower and upper bounds required for each dimension).
         """
         # Validate location parameters
-        lat_lower = request.query_params.get('latitude_lower_bound')
-        lat_upper = request.query_params.get('latitude_upper_bound')
-        lon_lower = request.query_params.get('longitude_lower_bound')
-        lon_upper = request.query_params.get('longitude_upper_bound')
+        lat_lower = request.query_params.get('latitude_min')
+        lat_upper = request.query_params.get('latitude_max')
+        lon_lower = request.query_params.get('longitude_min')
+        lon_upper = request.query_params.get('longitude_max')
         
         # Check for incomplete latitude bounds
         if (lat_lower is not None) != (lat_upper is not None):
             return Response(
-                {"error": "Both latitude_lower_bound and latitude_upper_bound must be provided together."},
+                {"error": "Both latitude_min and latitude_max must be provided together."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         # Check for incomplete longitude bounds
         if (lon_lower is not None) != (lon_upper is not None):
             return Response(
-                {"error": "Both longitude_lower_bound and longitude_upper_bound must be provided together."},
+                {"error": "Both longitude_min and longitude_max must be provided together."},
                 status=status.HTTP_400_BAD_REQUEST
             )
         

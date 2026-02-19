@@ -684,7 +684,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_latitude_filter_only(self):
         """Filter by latitude bounds (30-45 degrees) - should get NYC and LA."""
-        url = "/api/photos/?latitude_lower_bound=30&latitude_upper_bound=45"
+        url = "/api/photos/?latitude_min=30&latitude_max=45"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -698,7 +698,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_longitude_filter_only(self):
         """Filter by longitude bounds (-120 to -70) - should get NYC and LA."""
-        url = "/api/photos/?longitude_lower_bound=-120&longitude_upper_bound=-70"
+        url = "/api/photos/?longitude_min=-120&longitude_max=-70"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -712,7 +712,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_both_filters_active(self):
         """Filter by both latitude and longitude - should get only NYC."""
-        url = "/api/photos/?latitude_lower_bound=39&latitude_upper_bound=42&longitude_lower_bound=-75&longitude_upper_bound=-73"
+        url = "/api/photos/?latitude_min=39&latitude_max=42&longitude_min=-75&longitude_max=-73"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -726,7 +726,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_no_photos_meet_filter(self):
         """Filter with bounds that don't match any photos."""
-        url = "/api/photos/?latitude_lower_bound=70&latitude_upper_bound=80"
+        url = "/api/photos/?latitude_min=70&latitude_max=80"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -734,43 +734,43 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_swapped_bounds_impossible_range(self):
         """Test with lower bound > upper bound (impossible range) - should return no results."""
-        url = "/api/photos/?latitude_lower_bound=45&latitude_upper_bound=30"
+        url = "/api/photos/?latitude_min=45&latitude_max=30"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
         self.assertEqual(len(photo_uuids), 0)
     
-    def test_only_latitude_lower_bound_returns_400(self):
-        """Providing only latitude_lower_bound should return 400."""
-        url = "/api/photos/?latitude_lower_bound=30"
+    def test_only_latitude_min_returns_400(self):
+        """Providing only latitude_min should return 400."""
+        url = "/api/photos/?latitude_min=30"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
     
-    def test_only_latitude_upper_bound_returns_400(self):
-        """Providing only latitude_upper_bound should return 400."""
-        url = "/api/photos/?latitude_upper_bound=45"
+    def test_only_latitude_max_returns_400(self):
+        """Providing only latitude_max should return 400."""
+        url = "/api/photos/?latitude_max=45"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
     
-    def test_only_longitude_lower_bound_returns_400(self):
-        """Providing only longitude_lower_bound should return 400."""
-        url = "/api/photos/?longitude_lower_bound=-120"
+    def test_only_longitude_min_returns_400(self):
+        """Providing only longitude_min should return 400."""
+        url = "/api/photos/?longitude_min=-120"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
     
-    def test_only_longitude_upper_bound_returns_400(self):
-        """Providing only longitude_upper_bound should return 400."""
-        url = "/api/photos/?longitude_upper_bound=-70"
+    def test_only_longitude_max_returns_400(self):
+        """Providing only longitude_max should return 400."""
+        url = "/api/photos/?longitude_max=-70"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
     
     def test_invalid_numeric_value_returns_400(self):
         """Providing non-numeric values should return 400."""
-        url = "/api/photos/?latitude_lower_bound=abc&latitude_upper_bound=45"
+        url = "/api/photos/?latitude_min=abc&latitude_max=45"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.json())
@@ -778,7 +778,7 @@ class PhotoLocationQueryTestCase(TestCase):
     def test_hidden_location_excluded_from_results(self):
         """Photos with hide_location=True should never appear in filtered results."""
         # This filter would include the hidden photo's coordinates, but it should still be excluded
-        url = "/api/photos/?latitude_lower_bound=39&latitude_upper_bound=41&longitude_lower_bound=-76&longitude_upper_bound=-74"
+        url = "/api/photos/?latitude_min=39&latitude_max=41&longitude_min=-76&longitude_max=-74"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -788,7 +788,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_null_location_excluded_from_results(self):
         """Photos without location data should never appear in filtered results."""
-        url = "/api/photos/?latitude_lower_bound=0&latitude_upper_bound=90"
+        url = "/api/photos/?latitude_min=0&latitude_max=90"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -798,7 +798,7 @@ class PhotoLocationQueryTestCase(TestCase):
     def test_exact_boundary_match(self):
         """Test that photos exactly on boundaries are included."""
         # Set bounds to exactly match NYC coordinates
-        url = f"/api/photos/?latitude_lower_bound={self.photo_nyc.latitude}&latitude_upper_bound={self.photo_nyc.latitude}"
+        url = f"/api/photos/?latitude_min={self.photo_nyc.latitude}&latitude_max={self.photo_nyc.latitude}"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -807,7 +807,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_negative_longitude_range(self):
         """Test filtering across negative longitude values (Western hemisphere)."""
-        url = "/api/photos/?longitude_lower_bound=-180&longitude_upper_bound=0"
+        url = "/api/photos/?longitude_min=-180&longitude_max=0"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -819,7 +819,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_positive_longitude_range(self):
         """Test filtering across positive longitude values (Eastern hemisphere)."""
-        url = "/api/photos/?longitude_lower_bound=1&longitude_upper_bound=180"
+        url = "/api/photos/?longitude_min=1&longitude_max=180"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()]
@@ -831,7 +831,7 @@ class PhotoLocationQueryTestCase(TestCase):
     
     def test_combine_with_include_sizes_parameter(self):
         """Test that location filtering works alongside other parameters."""
-        url = "/api/photos/?latitude_lower_bound=30&latitude_upper_bound=45&include_sizes=true"
+        url = "/api/photos/?latitude_min=30&latitude_max=45&include_sizes=true"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Should return photos with location filters applied

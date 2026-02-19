@@ -829,6 +829,28 @@ class PhotoLocationQueryTestCase(TestCase):
         self.assertNotIn(str(self.photo_london.uuid), photo_uuids)
         self.assertIn(str(self.photo_tokyo.uuid), photo_uuids)
     
+    def test_antimeridian_wraparound_longitude(self):
+        """Test filtering across the antimeridian (+/-180deg) where min > max.
+        
+        A range of 160deg to -160deg (i.e. min=160, max=-160) should match Tokyo
+        (139.69degE is outside this range) but actually Tokyo at 139.69deg is NOT
+        in [160, 180] union [-180, -160]. Only things east of 160degE or west of 160degW.
+        
+        Use 130deg to -170deg to capture Tokyo (139.69degE) via the eastern side.
+        NYC (-74deg), LA (-118deg), London (-0.13deg) are all outside [130, 180] union [-180, -170].
+        """
+        url = "/api/photos/?longitude_min=130&longitude_max=-170"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()]
+        
+        self.assertIn(str(self.photo_tokyo.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_nyc.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_la.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_london.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_hidden.uuid), photo_uuids)
+        self.assertNotIn(str(self.photo_no_location.uuid), photo_uuids)
+    
     def test_combine_with_include_sizes_parameter(self):
         """Test that location filtering works alongside other parameters."""
         url = "/api/photos/?latitude_min=30&latitude_max=45&include_sizes=true"

@@ -8,6 +8,7 @@ from api_key.authentication import APIKeyAuthentication
 from api_key.permissions import HasAPIKey
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from .models import *
 
@@ -133,12 +134,22 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
             try:
                 lon_lower = float(lon_lower)
                 lon_upper = float(lon_upper)
-                queryset = queryset.filter(
-                    hide_location=False,
-                    longitude__isnull=False,
-                    longitude__gte=lon_lower,
-                    longitude__lte=lon_upper
-                )
+                if lon_lower <= lon_upper:
+                    # Normal range
+                    queryset = queryset.filter(
+                        hide_location=False,
+                        longitude__isnull=False,
+                        longitude__gte=lon_lower,
+                        longitude__lte=lon_upper
+                    )
+                else:
+                    # Wraparound range crossing the antimeridian (±180°)
+                    queryset = queryset.filter(
+                        hide_location=False,
+                        longitude__isnull=False,
+                    ).filter(
+                        Q(longitude__gte=lon_lower) | Q(longitude__lte=lon_upper)
+                    )
             except (ValueError, TypeError):
                 return queryset.none()  # Will trigger validation error in list()
         

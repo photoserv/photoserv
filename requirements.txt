@@ -13,3 +13,4 @@ psycopg2-binary ==2.9.11
 gunicorn==24.1.1
 django-celery-results==2.6.0
 drf-spectacular==0.29.0
+django-filter==25.2

@@ -26,8 +26,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy frontend code and run builds
 COPY . .
 RUN npm install
-RUN npm run build:css
-RUN npm run build:js
+RUN npm run build:all
 
 RUN python manage.py collectstatic
 

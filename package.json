@@ -5,7 +5,7 @@
     "dev:css": "tailwindcss -i ./static/css/app.css -o ./static/css/style.css --watch",
     "build:js": "esbuild ./static/js/app.js --bundle --outfile=./static/js/bundle.js --minify",
     "dev:js": "esbuild ./static/js/app.js --bundle --outfile=./static/js/bundle.js --watch",
-    "build": "npm run copy:leaflet && npm run build:css && npm run build:js"
+    "build:all": "npm run copy:leaflet && npm run build:css && npm run build:js"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.18",

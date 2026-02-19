@@ -8,6 +8,7 @@ import io
 from PIL import Image
 from django.utils import timezone
 from datetime import timedelta
+from .filters import PhotoFilterAPI
 
 
 def create_test_image_file(filename="test.jpg"):
@@ -837,3 +838,155 @@ class PhotoLocationQueryTestCase(TestCase):
         photo_uuids = [p['uuid'] for p in response.json()]
         self.assertIn(str(self.photo_nyc.uuid), photo_uuids)
         self.assertIn(str(self.photo_la.uuid), photo_uuids)
+
+
+class PhotoFilterTests(TestCase):
+    
+    def setUp(self):
+        """Set up test photos, albums, tags with various metadata for filtering"""
+        
+        # Create albums
+        self.album1 = Album.objects.create(title="Nature Album")
+        self.album2 = Album.objects.create(title="Urban Album")
+        self.album3 = Album.objects.create(title="People Album")
+        
+        # Create tags
+        self.tag_nature = Tag.objects.create(name="nature")
+        self.tag_city = Tag.objects.create(name="city")
+        self.tag_portrait = Tag.objects.create(name="portrait")
+        
+        # Photo 1: Canon, rating 5, ISO 800, in album1, tag nature
+        self.photo1 = Photo.objects.create(
+            title="Sunset in Nature",
+            raw_image=create_test_image_file("photo1.jpg")
+        )
+        self.photo1.update_published(update_model=True)
+        PhotoMetadata.objects.create(
+            photo=self.photo1,
+            camera_make="Canon",
+            iso=800,
+            rating=5
+        )
+        self.photo1.assign_albums([self.album1])
+        PhotoTag.objects.create(photo=self.photo1, tag=self.tag_nature)
+        
+        # Photo 2: Nikon, rating 3, ISO 400, in album2, tag city
+        self.photo2 = Photo.objects.create(
+            title="City Lights",
+            raw_image=create_test_image_file("photo2.jpg")
+        )
+        self.photo2.update_published(update_model=True)
+        PhotoMetadata.objects.create(
+            photo=self.photo2,
+            camera_make="Nikon",
+            iso=400,
+            rating=3
+        )
+        self.photo2.assign_albums([self.album2])
+        PhotoTag.objects.create(photo=self.photo2, tag=self.tag_city)
+        
+        # Photo 3: Sony, rating 4, ISO 100, in album3, tags city and portrait
+        self.photo3 = Photo.objects.create(
+            title="Street Portrait",
+            raw_image=create_test_image_file("photo3.jpg")
+        )
+        self.photo3.update_published(update_model=True)
+        PhotoMetadata.objects.create(
+            photo=self.photo3,
+            camera_make="Sony",
+            iso=100,
+            rating=4
+        )
+        self.photo3.assign_albums([self.album3])
+        PhotoTag.objects.create(photo=self.photo3, tag=self.tag_city)
+        PhotoTag.objects.create(photo=self.photo3, tag=self.tag_portrait)
+        
+        # Photo 4: Canon, rating 2, ISO 1600, in album1 and album3, tag nature
+        self.photo4 = Photo.objects.create(
+            title="Forest Scene",
+            raw_image=create_test_image_file("photo4.jpg")
+        )
+        self.photo4.update_published(update_model=True)
+        PhotoMetadata.objects.create(
+            photo=self.photo4,
+            camera_make="Canon",
+            iso=1600,
+            rating=2
+        )
+        self.photo4.assign_albums([self.album1, self.album3])
+        PhotoTag.objects.create(photo=self.photo4, tag=self.tag_nature)
+
+    def test_filter_api_by_album_uuid(self):
+        """Test API filtering by album UUIDs"""
+        
+        # Single album UUID
+        f = PhotoFilterAPI(data={'albums': [str(self.album1.uuid)]}, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 2)
+        self.assertIn(self.photo1, f.qs)
+        self.assertIn(self.photo4, f.qs)
+        
+        # Multiple album UUIDs
+        f = PhotoFilterAPI(data={
+            'albums': [str(self.album1.uuid), str(self.album3.uuid)]
+        }, queryset=Photo.objects.all())
+        self.assertGreaterEqual(f.qs.count(), 2)
+    
+    def test_filter_api_by_tag_uuid(self):
+        """Test API filtering by tag UUIDs"""
+        
+        # Single tag UUID
+        f = PhotoFilterAPI(data={'tags': [str(self.tag_nature.uuid)]}, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 2)
+        self.assertIn(self.photo1, f.qs)
+        self.assertIn(self.photo4, f.qs)
+        
+        # Multiple tag UUIDs
+        f = PhotoFilterAPI(data={
+            'tags': [str(self.tag_city.uuid), str(self.tag_portrait.uuid)]
+        }, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 2)
+        self.assertIn(self.photo2, f.qs)
+        self.assertIn(self.photo3, f.qs)
+    
+    def test_combined_filters(self):
+        """Test combining multiple filters"""
+        
+        # Canon cameras with rating >= 4
+        f = PhotoFilterAPI(data={
+            'camera_make': 'Canon',
+            'rating_min': '4'
+        }, queryset=Photo.objects.all())
+        
+        self.assertEqual(f.qs.count(), 1)
+        self.assertIn(self.photo1, f.qs)
+        
+        # City tag with ISO < 500
+        f = PhotoFilterAPI(data={
+            'tags': str(self.tag_city.uuid),
+            'iso_max': '500'
+        }, queryset=Photo.objects.all())
+        
+        self.assertEqual(f.qs.count(), 2)
+        self.assertIn(self.photo2, f.qs)  # ISO 400
+        self.assertIn(self.photo3, f.qs)  # ISO 100
+    
+    def test_filter_with_no_criteria(self):
+        """Test that empty filter returns all photos"""
+        
+        f = PhotoFilterAPI(data={}, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 4)
+    
+    def test_filter_with_no_results(self):
+        """Test filters that match no photos"""
+        
+        # ISO range that no photo has
+        f = PhotoFilterAPI(data={
+            'iso_min': '5000',
+            'iso_max': '10000'
+        }, queryset=Photo.objects.all())
+        
+        self.assertEqual(f.qs.count(), 0)
+        
+        # Non-existent camera make
+        f = PhotoFilterAPI(data={'camera_make': 'NonExistentBrand'}, queryset=Photo.objects.all())
+        self.assertEqual(f.qs.count(), 0)

@@ -55,10 +55,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "django.forms",
 
     "django_tables2",
     "crispy_forms",
     "crispy_daisyui",
+    "django_filters",
 
     "rest_framework",
     "drf_spectacular",
@@ -85,7 +87,7 @@ ROOT_URLCONF = 'photoserv.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ["templates"],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -99,6 +101,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'photoserv.wsgi.application'
+
+# Regular forms
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
+
 
 # Templating Plugin Config
 DJANGO_TABLES2_TABLE_ATTRS = {
@@ -222,6 +228,9 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',  # Only JSON, no HTML
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
 }
 
 SPECTACULAR_SETTINGS = {

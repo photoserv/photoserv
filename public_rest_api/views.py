@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from core.models import Photo, Size
+from .filters import PhotoFilterAPI
 from .serializers import *
 from django.http import FileResponse, Http404
 from rest_framework.generics import GenericAPIView
@@ -17,6 +18,24 @@ INCLUDE_SIZES_PARAM = OpenApiParameter(
     location=OpenApiParameter.QUERY,
     description='Include photo sizes in the response (default: false)',
     required=False,
+)
+
+ALBUMS_FILTER_PARAM = OpenApiParameter(
+    name='albums',
+    type=OpenApiTypes.UUID,
+    location=OpenApiParameter.QUERY,
+    description='Filter by album UUID(s)',
+    required=False,
+    many=True,
+)
+
+TAGS_FILTER_PARAM = OpenApiParameter(
+    name='tags',
+    type=OpenApiTypes.UUID,
+    location=OpenApiParameter.QUERY,
+    description='Filter by tag UUID(s)',
+    required=False,
+    many=True,
 )
 
 LATITUDE_LOWER_BOUND_PARAM = OpenApiParameter(
@@ -65,6 +84,7 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [HasAPIKey]
     lookup_field = 'uuid'
     queryset = Photo.objects.filter(_published=True)
+    filterset_class = PhotoFilterAPI
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -73,11 +93,12 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """
-        Filter photos by location bounds if provided.
+        Filter photos by location bounds and other filters using PhotoFilterAPI.
         """
         queryset = super().get_queryset()
+        queryset = queryset.select_related('metadata').prefetch_related('albums', 'tags')
         
-        # Get location bound parameters
+        # Get location bound parameters (legacy support)
         lat_lower = self.request.query_params.get('latitude_lower_bound')
         lat_upper = self.request.query_params.get('latitude_upper_bound')
         lon_lower = self.request.query_params.get('longitude_lower_bound')
@@ -125,6 +146,8 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
     
     @extend_schema(
         parameters=[
+            ALBUMS_FILTER_PARAM,
+            TAGS_FILTER_PARAM,
             INCLUDE_SIZES_PARAM,
             LATITUDE_LOWER_BOUND_PARAM,
             LATITUDE_UPPER_BOUND_PARAM,

@@ -98,7 +98,7 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = super().get_queryset()
         queryset = queryset.select_related('metadata').prefetch_related('albums', 'tags')
         
-        # Get location bound parameters (legacy support)
+        # Get location bound parameters
         lat_lower = self.request.query_params.get('latitude_lower_bound')
         lat_upper = self.request.query_params.get('latitude_upper_bound')
         lon_lower = self.request.query_params.get('longitude_lower_bound')

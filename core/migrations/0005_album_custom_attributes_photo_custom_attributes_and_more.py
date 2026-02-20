@@ -45,4 +45,9 @@ class Migration(migrations.Migration):
             name='raw_longitude',
             field=models.FloatField(blank=True, null=True),
         ),
+        migrations.AlterField(
+            model_name='album',
+            name='sort_descending',
+            field=models.BooleanField(default=True),
+        ),
     ]

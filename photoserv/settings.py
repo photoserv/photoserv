@@ -105,7 +105,6 @@ WSGI_APPLICATION = 'photoserv.wsgi.application'
 # Regular forms
 FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
-
 # Templating Plugin Config
 DJANGO_TABLES2_TABLE_ATTRS = {
     "class": "table table-zebra",

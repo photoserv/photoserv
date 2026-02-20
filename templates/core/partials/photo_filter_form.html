@@ -33,6 +33,10 @@
                 {{ filter.form.iso|as_crispy_field }}
                 {{ filter.form.shutter_speed|as_crispy_field }}
                 {{ filter.form.exposure_compensation|as_crispy_field }}
+
+                <!-- Location filter -->
+                {{ filter.form.hide_location|as_crispy_field }}
+                {{ filter.form.has_location_data|as_crispy_field }}
             </div>
             
             <!-- Albums and Tags in nested accordion -->

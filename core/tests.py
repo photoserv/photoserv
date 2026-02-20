@@ -373,7 +373,7 @@ class AlbumTests(TestCase):
         PhotoInAlbum.objects.create(album=self.album, photo=photo1, order=2)
         PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=1)
 
-        self.album.sort_method = Album.DefaultSortMethod.MANUAL
+        self.album.sort_method = Album.AlbumSortMethod.MANUAL
         ordered = list(self.album.get_ordered_photos())
         self.assertEqual(ordered[0], photo2)
     
@@ -387,7 +387,7 @@ class AlbumTests(TestCase):
         PhotoInAlbum.objects.create(album=self.album, photo=photo1, order=2)
         PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=3)
 
-        self.album.sort_method = Album.DefaultSortMethod.PUBLISHED
+        self.album.sort_method = Album.AlbumSortMethod.PUBLISHED
         self.album.sort_descending = False
         ordered = list(self.album.get_ordered_photos())
         
@@ -406,7 +406,7 @@ class AlbumTests(TestCase):
         PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=2)
         PhotoInAlbum.objects.create(album=self.album, photo=photo3, order=3)
 
-        self.album.sort_method = Album.DefaultSortMethod.PUBLISHED
+        self.album.sort_method = Album.AlbumSortMethod.PUBLISHED
         self.album.sort_descending = True
         ordered = list(self.album.get_ordered_photos())
         
@@ -429,7 +429,7 @@ class AlbumTests(TestCase):
         PhotoInAlbum.objects.create(album=self.album, photo=photo1, order=2)
         PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=3)
 
-        self.album.sort_method = Album.DefaultSortMethod.CREATED
+        self.album.sort_method = Album.AlbumSortMethod.CREATED
         self.album.sort_descending = False
         ordered = list(self.album.get_ordered_photos())
         
@@ -452,7 +452,7 @@ class AlbumTests(TestCase):
         PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=2)
         PhotoInAlbum.objects.create(album=self.album, photo=photo3, order=3)
 
-        self.album.sort_method = Album.DefaultSortMethod.CREATED
+        self.album.sort_method = Album.AlbumSortMethod.CREATED
         self.album.sort_descending = True
         ordered = list(self.album.get_ordered_photos())
         
@@ -471,7 +471,7 @@ class AlbumTests(TestCase):
         PhotoInAlbum.objects.create(album=self.album, photo=photo2, order=2)
         PhotoInAlbum.objects.create(album=self.album, photo=photo3, order=3)
 
-        self.album.sort_method = Album.DefaultSortMethod.MANUAL
+        self.album.sort_method = Album.AlbumSortMethod.MANUAL
         
         # Test with sort_descending = False
         self.album.sort_descending = False
@@ -497,6 +497,119 @@ class AlbumTests(TestCase):
         with self.assertRaises(ValidationError):
             parent.parent = child
             parent.full_clean()
+    
+    def test_album_recursion(self):
+        """
+        Tree structure:
+            root
+            ├── child_a
+            │   └── grandchild
+            └── child_b
+        unrelated  (completely separate)
+
+        Photos:
+          p_root        → root only
+          p_child_a     → child_a only
+          p_grandchild  → grandchild only
+          p_multi       → root AND grandchild  (in-tree duplicate → must appear once)
+          p_cross       → child_b AND unrelated (in-tree via child_b, out-of-tree via unrelated)
+          p_unrelated   → unrelated only
+
+        Expected for root.get_ordered_photos(recursive=True):
+          {p_root, p_child_a, p_grandchild, p_multi, p_cross}  — exactly once each
+          p_unrelated must NOT appear
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+
+        root        = Album.objects.create(title="Root Album")
+        child_a     = Album.objects.create(title="Child A", parent=root)
+        child_b     = Album.objects.create(title="Child B", parent=root)
+        grandchild  = Album.objects.create(title="Grandchild", parent=child_a)
+        unrelated   = Album.objects.create(title="Unrelated Album")
+
+        now = timezone.now()
+
+        def make_photo(title, days_ago):
+            p = Photo.objects.create(
+                title=title,
+                raw_image=f"{title.lower().replace(' ', '_')}.jpg",
+                publish_date=now - timedelta(days=days_ago),
+            )
+            return p
+
+        p_root       = make_photo("Root Photo",       5)
+        p_child_a    = make_photo("Child A Photo",    4)
+        p_grandchild = make_photo("Grandchild Photo", 3)
+        p_multi      = make_photo("Multi Photo",      2)   # in root AND grandchild
+        p_cross      = make_photo("Cross Photo",      1)   # in child_b AND unrelated
+        p_unrelated  = make_photo("Unrelated Photo",  0)
+
+        PhotoInAlbum.objects.create(album=root,       photo=p_root,       order=1)
+        PhotoInAlbum.objects.create(album=child_a,    photo=p_child_a,    order=1)
+        PhotoInAlbum.objects.create(album=grandchild, photo=p_grandchild, order=1)
+        PhotoInAlbum.objects.create(album=root,       photo=p_multi,      order=2)
+        PhotoInAlbum.objects.create(album=grandchild, photo=p_multi,      order=2)
+        PhotoInAlbum.objects.create(album=child_b,    photo=p_cross,      order=1)
+        PhotoInAlbum.objects.create(album=unrelated,  photo=p_cross,      order=1)
+        PhotoInAlbum.objects.create(album=unrelated,  photo=p_unrelated,  order=2)
+
+        # --- Non-recursive: root only ---
+        non_recursive = list(root.get_ordered_photos())
+        self.assertIn(p_root, non_recursive)
+        self.assertIn(p_multi, non_recursive)
+        self.assertNotIn(p_child_a, non_recursive)
+        self.assertNotIn(p_grandchild, non_recursive)
+        self.assertNotIn(p_cross, non_recursive)
+        self.assertNotIn(p_unrelated, non_recursive)
+
+        # --- Recursive: full subtree ---
+        recursive_qs = root.get_ordered_photos(recursive=True)
+        recursive_list = list(recursive_qs)
+
+        in_tree = {p_root, p_child_a, p_grandchild, p_multi, p_cross}
+        for photo in in_tree:
+            self.assertIn(photo, recursive_list)
+
+        # p_unrelated is not in the tree
+        self.assertNotIn(p_unrelated, recursive_list)
+
+        # No duplicates — p_multi is in root AND grandchild but must appear once
+        uuids = [p.uuid for p in recursive_list]
+        self.assertEqual(len(uuids), len(set(uuids)), "Recursive result contains duplicate photos")
+
+        # --- Recursive with public_only ---
+        # None of the photos are published (_published=False by default), so result should be empty
+        recursive_public = list(root.get_ordered_photos(recursive=True, public_only=True))
+        self.assertEqual(recursive_public, [])
+
+        # Publish in-tree photos and re-check
+        for p in in_tree:
+            p._published = True
+            p.save()
+
+        recursive_public = list(root.get_ordered_photos(recursive=True, public_only=True))
+        for photo in in_tree:
+            self.assertIn(photo, recursive_public)
+        self.assertNotIn(p_unrelated, recursive_public)
+
+        # --- Recursive with MANUAL sort falls back to PUBLISHED ---
+        recursive_manual = list(root.get_ordered_photos(recursive=True, sort_method=Album.AlbumSortMethod.MANUAL))
+        # Should not raise; falls back to PUBLISHED keeping album's sort_descending=True (newest first)
+        self.assertEqual(recursive_manual[0], p_cross)  # 1 day ago (newest)
+        self.assertEqual(recursive_manual[-1], p_root)  # 5 days ago (oldest)
+
+        # --- Recursive with explicit sort_descending ---
+        recursive_desc = list(root.get_ordered_photos(recursive=True, sort_descending=True))
+        self.assertEqual(recursive_desc[0], p_cross)   # 1 day ago (newest)
+        self.assertEqual(recursive_desc[-1], p_root)   # 5 days ago (oldest)
+
+        # --- Unrelated album recursive: should only see p_cross and p_unrelated ---
+        unrelated_recursive = list(unrelated.get_ordered_photos(recursive=True))
+        self.assertIn(p_cross, unrelated_recursive)
+        self.assertIn(p_unrelated, unrelated_recursive)
+        for photo in {p_root, p_child_a, p_grandchild, p_multi}:
+            self.assertNotIn(photo, unrelated_recursive)
 
 
 class AlbumSlugTests(TestCase):
@@ -1235,3 +1348,28 @@ class FilterTests(TestCase):
         self.assertEqual(f.qs.count(), 2)
         self.assertIn(self.photo1, f.qs)
         self.assertIn(self.photo2, f.qs)
+
+    def test_location_data_filter(self):
+        """Test filtering photos by whether they have location data"""
+        # Give photo1 and photo2 location data; leave photo3 and photo4 without
+        self.photo1.latitude = 48.8566
+        self.photo1.longitude = 2.3522
+        self.photo1.save()
+
+        self.photo2.latitude = 51.5074
+        self.photo2.longitude = -0.1278
+        self.photo2.save()
+
+        # Filter for photos WITH location data
+        f = PhotoFilter(data={'has_location_data': True}, queryset=Photo.objects.all())
+        self.assertIn(self.photo1, f.qs)
+        self.assertIn(self.photo2, f.qs)
+        self.assertNotIn(self.photo3, f.qs)
+        self.assertNotIn(self.photo4, f.qs)
+
+        # Filter for photos WITHOUT location data
+        f = PhotoFilter(data={'has_location_data': False}, queryset=Photo.objects.all())
+        self.assertNotIn(self.photo1, f.qs)
+        self.assertNotIn(self.photo2, f.qs)
+        self.assertIn(self.photo3, f.qs)
+        self.assertIn(self.photo4, f.qs)

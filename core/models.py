@@ -270,7 +270,7 @@ class PhotoTag(models.Model):
 
 
 class Album(PublicEntity):
-    class DefaultSortMethod(models.TextChoices):
+    class AlbumSortMethod(models.TextChoices):
         CREATED = "CREATED", "Photo Created Date (Exif)"
         PUBLISHED = "PUBLISHED", "Publish Date"
         MANUAL = "MANUAL", "Manual"
@@ -282,10 +282,10 @@ class Album(PublicEntity):
     slug = models.SlugField(max_length=255, unique=True)
     sort_method = models.CharField(
         max_length=10,
-        choices=DefaultSortMethod.choices,
-        default=DefaultSortMethod.PUBLISHED
+        choices=AlbumSortMethod.choices,
+        default=AlbumSortMethod.PUBLISHED
     )
-    sort_descending = models.BooleanField(default=False)
+    sort_descending = models.BooleanField(default=True)
     _photos = models.ManyToManyField(
         "Photo",
         through="PhotoInAlbum",
@@ -295,25 +295,43 @@ class Album(PublicEntity):
     parent = models.ForeignKey("Album", on_delete=models.SET_NULL, null=True, blank=True, related_name="children")
     custom_attributes = models.JSONField(default=dict, blank=True)
 
-    def get_ordered_photos(self, public_only: bool = False):
+    def get_ordered_photos(self, public_only: bool = False, recursive: bool = False, sort_method: AlbumSortMethod = None, sort_descending: bool = None):
         qs = self._photos.all()
+
+        sort_method = sort_method if sort_method is not None else self.sort_method
+        sort_descending = self.sort_descending if sort_descending is None else sort_descending
+
+        if recursive:
+            # MANUAL sort is meaningless across multiple albums; fall back to PUBLISHED
+            if sort_method == self.AlbumSortMethod.MANUAL:
+                sort_method = self.AlbumSortMethod.PUBLISHED
+
+            # Collect all album PKs in the subtree (BFS)
+            album_pks = []
+            queue = [self]
+            while queue:
+                current = queue.pop(0)
+                album_pks.append(current.pk)
+                queue.extend(current.children.all())
+
+            qs = Photo.objects.filter(albums__in=album_pks).distinct()
 
         if public_only:
             qs = qs.filter(_published=True)
 
-        if self.sort_method == self.DefaultSortMethod.MANUAL:
+        if sort_method == self.AlbumSortMethod.MANUAL:
             # Do not apply ascending/descending for manual sort
             return qs.order_by("photoinalbum__order")
-        elif self.sort_method == self.DefaultSortMethod.CREATED:
+        elif sort_method == self.AlbumSortMethod.CREATED:
             order_by = "metadata__capture_date"
-        elif self.sort_method == self.DefaultSortMethod.PUBLISHED:
+        elif sort_method == self.AlbumSortMethod.PUBLISHED:
             order_by = "publish_date"
-        elif self.sort_method == self.DefaultSortMethod.RANDOM:
+        elif sort_method == self.AlbumSortMethod.RANDOM:
             return qs.order_by("?")  # random order, no need for sort_descending
         else:
             order_by = "photoinalbum__order"
 
-        if self.sort_descending:
+        if sort_descending:
             order_by = f'-{order_by}'
 
         return qs.order_by(order_by)

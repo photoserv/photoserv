@@ -21,56 +21,6 @@ INCLUDE_SIZES_PARAM = OpenApiParameter(
     required=False,
 )
 
-ALBUMS_FILTER_PARAM = OpenApiParameter(
-    name='albums',
-    type=OpenApiTypes.UUID,
-    location=OpenApiParameter.QUERY,
-    description='Filter by album UUID(s)',
-    required=False,
-    many=True,
-)
-
-TAGS_FILTER_PARAM = OpenApiParameter(
-    name='tags',
-    type=OpenApiTypes.UUID,
-    location=OpenApiParameter.QUERY,
-    description='Filter by tag UUID(s)',
-    required=False,
-    many=True,
-)
-
-LATITUDE_MIN_PARAM = OpenApiParameter(
-    name='latitude_min',
-    type=OpenApiTypes.FLOAT,
-    location=OpenApiParameter.QUERY,
-    description='Minimum latitude for location filter (requires latitude_max)',
-    required=False,
-)
-
-LATITUDE_MAX_PARAM = OpenApiParameter(
-    name='latitude_max',
-    type=OpenApiTypes.FLOAT,
-    location=OpenApiParameter.QUERY,
-    description='Maximum latitude for location filter (requires latitude_min)',
-    required=False,
-)
-
-LONGITUDE_MIN_PARAM = OpenApiParameter(
-    name='longitude_min',
-    type=OpenApiTypes.FLOAT,
-    location=OpenApiParameter.QUERY,
-    description='Minimum longitude for location filter (requires longitude_max)',
-    required=False,
-)
-
-LONGITUDE_MAX_PARAM = OpenApiParameter(
-    name='longitude_max',
-    type=OpenApiTypes.FLOAT,
-    location=OpenApiParameter.QUERY,
-    description='Maximum longitude for location filter (requires longitude_min)',
-    required=False,
-)
-
 
 class SizeViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = [APIKeyAuthentication]
@@ -157,13 +107,51 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
     
     @extend_schema(
         parameters=[
-            ALBUMS_FILTER_PARAM,
-            TAGS_FILTER_PARAM,
+            OpenApiParameter(
+                name='albums',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.QUERY,
+                description='Filter by album UUID(s)',
+                required=False,
+                many=True,
+            ),
+            OpenApiParameter(
+                name='tags',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.QUERY,
+                description='Filter by tag UUID(s)',
+                required=False,
+                many=True,
+            ),
             INCLUDE_SIZES_PARAM,
-            LATITUDE_MIN_PARAM,
-            LATITUDE_MAX_PARAM,
-            LONGITUDE_MIN_PARAM,
-            LONGITUDE_MAX_PARAM,
+            OpenApiParameter(
+                name='latitude_min',
+                type=OpenApiTypes.FLOAT,
+                location=OpenApiParameter.QUERY,
+                description='Minimum latitude for location filter (requires latitude_max)',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='latitude_max',
+                type=OpenApiTypes.FLOAT,
+                location=OpenApiParameter.QUERY,
+                description='Maximum latitude for location filter (requires latitude_min)',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='longitude_min',
+                type=OpenApiTypes.FLOAT,
+                location=OpenApiParameter.QUERY,
+                description='Minimum longitude for location filter (requires longitude_max)',
+                required=False,
+            ),
+            OpenApiParameter(
+                name='longitude_max',
+                type=OpenApiTypes.FLOAT,
+                location=OpenApiParameter.QUERY,
+                description='Maximum longitude for location filter (requires longitude_min)',
+                required=False,
+            ),
         ],
         responses={200: PhotoSummarySerializer},
     )
@@ -261,7 +249,32 @@ class AlbumViewSet(viewsets.ReadOnlyModelViewSet):
         return AlbumSerializer
 
     @extend_schema(
-        parameters=[INCLUDE_SIZES_PARAM],
+        parameters=[
+            INCLUDE_SIZES_PARAM,
+            OpenApiParameter(
+                name='recursive',
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description='Include photos from all descendant albums recursively (true/false). When enabled, MANUAL sort method falls back to PUBLISHED.',
+                required=False,
+                enum=[True, False],
+            ),
+            OpenApiParameter(
+                name='sort_method',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Override album sort method. One of: CREATED, PUBLISHED, MANUAL, RANDOM. Defaults to the album\'s configured sort method.',
+                required=False,
+                enum=['CREATED', 'PUBLISHED', 'MANUAL', 'RANDOM'],
+            ),
+            OpenApiParameter(
+                name='sort_descending',
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description='Override album sort direction. Defaults to the album\'s configured sort direction.',
+                required=False,
+            )
+        ],
         responses={200: AlbumSerializer},
         description="Retrieve an album including metadata, children, and photos."
     )

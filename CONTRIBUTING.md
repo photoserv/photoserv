@@ -83,7 +83,7 @@ Example:
 * Automatic albums based on photo data/metadata (e.g., camera model, location)
 * Real implementation of a dashboard (home app)?... This is very low priority.
 * Photo map
-* Recursive album photo option
+* Bulk photo editing for select actions
 
 ## Project Structure
 

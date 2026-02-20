@@ -1,5 +1,6 @@
 from core.models import Photo, Size, Album, Tag, PhotoMetadata, PhotoTag, PhotoSize
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from drf_spectacular.utils import extend_schema_field
 
 
@@ -39,7 +40,7 @@ class PhotoSummarySerializer(serializers.ModelSerializer):
 
         include_sizes = False
         if request:
-            include_sizes = request.query_params.get("include_sizes", "").lower() in ["1", "true", "yes"]
+            include_sizes = request.query_params.get("include_sizes", "").lower() == "true"
 
         if not include_sizes:
             return []
@@ -63,7 +64,35 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(PhotoSummarySerializer(many=True))
     def get_photos(self, obj):
-        return PhotoSummarySerializer(obj.get_ordered_photos(public_only=True), many=True, context=self.context).data
+        request = self.context.get("request")
+
+        sort_method = None
+        sort_descending = None
+
+        if request:
+            raw_sort = request.query_params.get("sort_method")
+            if raw_sort is not None:
+                try:
+                    sort_method = Album.AlbumSortMethod(raw_sort.upper())
+                except ValueError:
+                    valid = [m.value for m in Album.AlbumSortMethod]
+                    raise ValidationError(
+                        {"sort_method": f"Invalid sort method '{raw_sort}'. Must be one of: {', '.join(valid)}."}
+                    )
+
+            raw_desc = request.query_params.get("sort_descending")
+            if raw_desc is not None:
+                sort_descending = raw_desc.lower() == "true"
+
+        recursive = False
+        if request:
+            recursive = request.query_params.get("recursive", "").lower() == "true"
+
+        return PhotoSummarySerializer(
+            obj.get_ordered_photos(public_only=True, sort_method=sort_method, sort_descending=sort_descending, recursive=recursive),
+            many=True,
+            context=self.context
+        ).data
     
     @extend_schema_field(AlbumSummarySerializer(allow_null=True))
     def get_parent(self, obj):

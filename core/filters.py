@@ -2,8 +2,8 @@ import django_filters
 from django import forms
 from django_filters.widgets import RangeWidget
 from .models import Photo, PhotoMetadata, Album, Tag
-from .widgets import CrispyRangeWidget, CrispyDateRangeWidget, CrispyDateTimeRangeWidget, CrispyShutterSpeedRangeWidget
-from .fields import ShutterSpeedRangeField
+from .widgets import *
+from .fields import *
 
 
 class ShutterSpeedRangeFilter(django_filters.RangeFilter):
@@ -12,6 +12,14 @@ class ShutterSpeedRangeFilter(django_filters.RangeFilter):
     to accept both decimal and fractional notation.
     """
     field_class = ShutterSpeedRangeField
+
+
+class LowercaseBooleanFilter(django_filters.BooleanFilter):
+    """
+    Custom BooleanFilter that uses LowercaseBooleanSelectField to render
+    a NullBooleanSelect dropdown and accept true/false/yes/no inputs.
+    """
+    field_class = LowercaseBooleanSelectField
 
 
 class PhotoFilter(django_filters.FilterSet):
@@ -154,7 +162,25 @@ class PhotoFilter(django_filters.FilterSet):
         label='Exposure compensation',
         widget=CrispyRangeWidget(attrs={'type': 'number', 'step': '0.1'})
     )
-    
+
+    # Location filters
+    hide_location = LowercaseBooleanFilter(
+        field_name='hide_location',
+        label='Location hidden',
+    )
+
+    has_location_data = LowercaseBooleanFilter(
+        label='Has location data',
+        method='filter_has_location_data',
+    )
+
+    def filter_has_location_data(self, queryset, name, value):
+        if value is True:
+            return queryset.filter(latitude__isnull=False, longitude__isnull=False)
+        elif value is False:
+            return queryset.filter(latitude__isnull=True, longitude__isnull=True)
+        return queryset
+
     class Meta:
         model = Photo
         fields = []  # We define all fields explicitly above

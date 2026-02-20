@@ -41,7 +41,7 @@ class FormWithCustomAttributesFieldMixin(forms.Form):
 
 class PhotoForm(forms.ModelForm, FormWithCustomAttributesFieldMixin):
     albums = forms.ModelMultipleChoiceField(
-        queryset=Album.objects.all(),
+        queryset=Album.objects.all().order_by('title'),
         required=False,
         widget=forms.CheckboxSelectMultiple,
         label="Albums"
@@ -219,7 +219,6 @@ class AlbumForm(forms.ModelForm, FormWithCustomAttributesFieldMixin):
     )
     sort_descending = forms.BooleanField(
         required=False,
-        initial=True,
         help_text="This is ignored by manual and random sort modes."
     )
 

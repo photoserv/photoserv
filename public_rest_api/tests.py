@@ -101,6 +101,116 @@ class APISerializerTestCase(TestCase):
         children = data["children"] if isinstance(data["children"], list) else []
         child_uuids = [child["uuid"] for child in children]
         self.assertIn(str(self.album2.uuid), child_uuids)
+    
+    def test_album_photo_relationship(self):
+        # Create a second photo with an earlier publish date
+        photo2 = Photo.objects.create(
+            title="Earlier Photo",
+            raw_image=create_test_image_file("earlier.jpg"),
+            publish_date=timezone.now() - timedelta(days=5),
+        )
+        photo2.update_published(update_model=True)
+        photo2.assign_albums([self.album1])
+
+        url = f"/api/albums/{self.album1.uuid}/"
+
+        # --- Default sort (album default: PUBLISHED ascending) ---
+        self.album1.sort_method = "PUBLISHED"
+        self.album1.sort_descending = False
+        self.album1.save()
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()['photos']]
+        # photo2 has earlier publish_date so should appear first
+        self.assertEqual(photo_uuids.index(str(photo2.uuid)), 0)
+        self.assertEqual(photo_uuids.index(str(self.photo.uuid)), 1)
+
+        # --- Override sort_method=PUBLISHED&sort_descending=true ---
+        response = self.client.get(url + "?sort_descending=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()['photos']]
+        # With descending, newer photo (self.photo) should be first
+        self.assertEqual(photo_uuids.index(str(self.photo.uuid)), 0)
+        self.assertEqual(photo_uuids.index(str(photo2.uuid)), 1)
+
+        # --- Override sort_method=CREATED (no metadata, falls back to manual order) ---
+        response = self.client.get(url + "?sort_method=CREATED")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.json()
+        # Should still return both photos (regardless of order without metadata)
+        photo_uuids = [p['uuid'] for p in data['photos']]
+        self.assertIn(str(self.photo.uuid), photo_uuids)
+        self.assertIn(str(photo2.uuid), photo_uuids)
+
+        # --- Invalid sort_method raises 400 ---
+        response = self.client.get(url + "?sort_method=INVALID")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("sort_method", response.json())
+
+        # --- sort_descending without sort_method respects album's own sort_method ---
+        self.album1.sort_method = "PUBLISHED"
+        self.album1.sort_descending = False
+        self.album1.save()
+        response = self.client.get(url + "?sort_descending=false")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p['uuid'] for p in response.json()['photos']]
+        self.assertEqual(photo_uuids.index(str(photo2.uuid)), 0)
+
+    def test_album_detail_invalid_sort_method_returns_400(self):
+        url = f"/api/albums/{self.album1.uuid}/"
+
+        response = self.client.get(url + "?sort_method=BOGUS")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.json()
+        self.assertIn("sort_method", data)
+        # Ensure all valid values are mentioned in the error message
+        error_text = str(data["sort_method"])
+        for method in ["CREATED", "PUBLISHED", "MANUAL", "RANDOM"]:
+            self.assertIn(method, error_text)
+    
+    def test_album_simple_recursion(self):
+        # Create a parent and child album
+        parent_album = Album.objects.create(title="Parent Album")
+        child_album = Album.objects.create(title="Child Album", parent=parent_album)
+
+        # Create one photo per album
+        parent_photo = Photo.objects.create(
+            title="Parent Photo",
+            raw_image=create_test_image_file("parent.jpg"),
+        )
+        parent_photo.update_published(update_model=True)
+        parent_photo.assign_albums([parent_album])
+
+        child_photo = Photo.objects.create(
+            title="Child Photo",
+            raw_image=create_test_image_file("child.jpg"),
+        )
+        child_photo.update_published(update_model=True)
+        child_photo.assign_albums([child_album])
+
+        url = f"/api/albums/{parent_album.uuid}/"
+
+        # Without recursive — only the parent album's own photo
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p["uuid"] for p in response.json()["photos"]]
+        self.assertIn(str(parent_photo.uuid), photo_uuids)
+        self.assertNotIn(str(child_photo.uuid), photo_uuids)
+
+        # With recursive=false — same as default
+        response = self.client.get(url + "?recursive=false")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p["uuid"] for p in response.json()["photos"]]
+        self.assertIn(str(parent_photo.uuid), photo_uuids)
+        self.assertNotIn(str(child_photo.uuid), photo_uuids)
+
+        # With recursive=true — photos from both parent and child
+        response = self.client.get(url + "?recursive=true")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        photo_uuids = [p["uuid"] for p in response.json()["photos"]]
+        self.assertIn(str(parent_photo.uuid), photo_uuids)
+        self.assertIn(str(child_photo.uuid), photo_uuids)
 
     # --- Tag Tests ---
     def test_tags_exist(self):

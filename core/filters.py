@@ -14,14 +14,6 @@ class ShutterSpeedRangeFilter(django_filters.RangeFilter):
     field_class = ShutterSpeedRangeField
 
 
-class LowercaseBooleanFilter(django_filters.BooleanFilter):
-    """
-    Custom BooleanFilter that uses LowercaseBooleanSelectField to render
-    a NullBooleanSelect dropdown and accept true/false/yes/no inputs.
-    """
-    field_class = LowercaseBooleanSelectField
-
-
 class PhotoFilter(django_filters.FilterSet):
     """
     Comprehensive filter for Photo model including metadata fields.
@@ -164,12 +156,12 @@ class PhotoFilter(django_filters.FilterSet):
     )
 
     # Location filters
-    hide_location = LowercaseBooleanFilter(
+    hide_location = django_filters.BooleanFilter(
         field_name='hide_location',
         label='Location hidden',
     )
 
-    has_location_data = LowercaseBooleanFilter(
+    has_location_data = django_filters.BooleanFilter(
         label='Has location data',
         method='filter_has_location_data',
     )

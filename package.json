@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.2.1",
-    "daisyui": "^5.5.14",
+    "daisyui": "^5.5.19",
     "esbuild": "^0.27.2",
     "tailwindcss": "^4.2.1"
   },

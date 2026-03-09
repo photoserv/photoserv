@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.1](https://github.com/photoserv/photoserv/compare/0.9.0...0.9.1) (2026-03-09)
+
+
+### Dependencies
+
+* **js:** bump @alpinejs/sort from 3.15.6 to 3.15.8 ([22adad2](https://github.com/photoserv/photoserv/commit/22adad224e6b7e5e441ad650a12a05e6a1d06828))
+* **js:** bump @codemirror/view from 6.39.12 to 6.39.15 ([6b7540b](https://github.com/photoserv/photoserv/commit/6b7540b8dec23023194ab15fcd7460aaacceca7b))
+* **js:** bump @tailwindcss/cli from 4.1.18 to 4.2.1 ([3eb3610](https://github.com/photoserv/photoserv/commit/3eb3610cb3e7fdd2c3adbb2e252e62e86b731d2e))
+* **js:** bump daisyui from 5.5.14 to 5.5.19 ([41f9430](https://github.com/photoserv/photoserv/commit/41f9430a52b8f5be8c71589ed6a8b02824da3c4e))
+* **js:** bump tailwindcss from 4.1.18 to 4.2.1 ([777ae67](https://github.com/photoserv/photoserv/commit/777ae673bf15b0836533e6bcdfda7a0b28e98c3f))
+* **python:** bump crispy-daisyui from 0.12.1 to 0.13.0 ([5e4d58f](https://github.com/photoserv/photoserv/commit/5e4d58f4b3f94a701c8566fcd0b34858ea17278e))
+* **python:** bump django from 6.0.1 to 6.0.2 ([de0d65b](https://github.com/photoserv/photoserv/commit/de0d65b54e0540d1fa1eb144e1efff3a0a07f9d9))
+* **python:** bump gunicorn from 24.1.1 to 25.1.0 ([d775567](https://github.com/photoserv/photoserv/commit/d7755674efe443b72ef97f2ab575bfcd78b42d10))
+* **python:** bump redis from 7.1.0 to 7.2.1 ([06584d2](https://github.com/photoserv/photoserv/commit/06584d2d9fd6a041838300a84961832e7cfec421))
+* **python:** update pillow requirement from &lt;=12.1.0 to &lt;=12.1.1 ([b8091ff](https://github.com/photoserv/photoserv/commit/b8091ffad73020917c4e962c8929b51a75058373))
+
 ## [0.9.0](https://github.com/photoserv/photoserv/compare/0.8.0...0.9.0) (2026-02-20)
 
 

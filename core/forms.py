@@ -180,8 +180,9 @@ class CondensedPhotoForm(PhotoForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Remove the slug field inherited from PhotoForm
-        if "slug" in self.fields:
-            del self.fields["slug"]
+        for field in ["slug", "custom_attributes"]:
+            if field in self.fields:
+                del self.fields[field]
 
 
 PhotoFormSet = forms.modelformset_factory(

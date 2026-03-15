@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/photoserv/photoserv/compare/0.9.1...0.9.2) (2026-03-15)
+
+
+### Bug Fixes
+
+* Remove "custom attributes" from photo multi-create form ([1410902](https://github.com/photoserv/photoserv/commit/141090231df7cc8530ab9ee562de6d9bcb2344f5))
+
 ## [0.9.1](https://github.com/photoserv/photoserv/compare/0.9.0...0.9.1) (2026-03-09)
 
 

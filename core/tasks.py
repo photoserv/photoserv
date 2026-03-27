@@ -81,6 +81,16 @@ def parse_exif_date(date_str) -> datetime | None:
         return None
 
 
+def parse_numeric(value, cast=float):
+    """Convert a value to a numeric type, returning None if conversion fails."""
+    if value is None:
+        return None
+    try:
+        return cast(value)
+    except (ValueError, TypeError):
+        return None
+
+
 @shared_task
 def generate_sizes_for_photo(photo_id):
     try:
@@ -169,26 +179,26 @@ def generate_photo_metadata(photo_id):
 
         # Extract relevant metadata
         metadata.capture_date = parse_exif_date(metadata_dict.get(METADATA_EXIF_DATETIME_ORIGINAL))
-        metadata.rating = metadata_dict.get(METADATA_XMP_RATING)
+        metadata.rating = parse_numeric(metadata_dict.get(METADATA_XMP_RATING), cast=int)
 
         metadata.camera_make = metadata_dict.get(METADATA_EXIF_MAKE)
         metadata.camera_model = metadata_dict.get(METADATA_EXIF_MODEL)
         metadata.lens_model = metadata_dict.get(METADATA_COMPOSITE_LENS_ID)
 
-        metadata.focal_length = metadata_dict.get(METADATA_EXIF_FOCAL_LENGTH)
-        metadata.focal_length_35mm = metadata_dict.get(METADATA_EXIF_FOCAL_LENGTH_35MM)
-        metadata.aperture = metadata_dict.get(METADATA_EXIF_APERTURE)
-        metadata.shutter_speed = metadata_dict.get(METADATA_EXIF_SHUTTER_SPEED)
-        metadata.iso = metadata_dict.get(METADATA_EXIF_ISO)
+        metadata.focal_length = parse_numeric(metadata_dict.get(METADATA_EXIF_FOCAL_LENGTH))
+        metadata.focal_length_35mm = parse_numeric(metadata_dict.get(METADATA_EXIF_FOCAL_LENGTH_35MM))
+        metadata.aperture = parse_numeric(metadata_dict.get(METADATA_EXIF_APERTURE))
+        metadata.shutter_speed = parse_numeric(metadata_dict.get(METADATA_EXIF_SHUTTER_SPEED))
+        metadata.iso = parse_numeric(metadata_dict.get(METADATA_EXIF_ISO), cast=int)
 
         metadata.exposure_program = metadata_dict.get(METADATA_EXIF_EXPOSURE_PROGRAM)
-        metadata.exposure_compensation = metadata_dict.get(METADATA_EXIF_EXPOSURE_COMPENSATION)
+        metadata.exposure_compensation = parse_numeric(metadata_dict.get(METADATA_EXIF_EXPOSURE_COMPENSATION))
         metadata.flash = metadata_dict.get(METADATA_EXIF_FLASH)
 
         metadata.copyright = metadata_dict.get(METADATA_EXIF_COPYRIGHT)
 
-        metadata.raw_latitude = metadata_dict.get(METADATA_COMPOSITE_LATITUDE)
-        metadata.raw_longitude = metadata_dict.get(METADATA_COMPOSITE_LONGITUDE)
+        metadata.raw_latitude = parse_numeric(metadata_dict.get(METADATA_COMPOSITE_LATITUDE))
+        metadata.raw_longitude = parse_numeric(metadata_dict.get(METADATA_COMPOSITE_LONGITUDE))
 
         metadata.save()
 

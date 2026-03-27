@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3](https://github.com/photoserv/photoserv/compare/0.9.2...0.9.3) (2026-03-27)
+
+
+### Bug Fixes
+
+* Fix bug where missing EV comp crashed metadata and size generation ([c7e2032](https://github.com/photoserv/photoserv/commit/c7e2032719330b3110599bc34681680af26d4cba))
+
 ## [0.9.2](https://github.com/photoserv/photoserv/compare/0.9.1...0.9.2) (2026-03-15)
 
 

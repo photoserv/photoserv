@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.4](https://github.com/photoserv/photoserv/compare/0.9.3...0.9.4) (2026-04-02)
+
+
+### Dependencies
+
+* **js:** bump @alpinejs/sort from 3.15.8 to 3.15.9 ([4ab82e7](https://github.com/photoserv/photoserv/commit/4ab82e7be91d7e99117aaeded845d1908215fc51))
+* **js:** bump @codemirror/view from 6.39.15 to 6.40.0 ([bc412e7](https://github.com/photoserv/photoserv/commit/bc412e77fc734c8d18bb29afbb8d779b6f2ea8b6))
+* **js:** bump @tailwindcss/cli from 4.2.1 to 4.2.2 ([d479dba](https://github.com/photoserv/photoserv/commit/d479dbaf7dee0ba6d5a10abf24ffbbaff539f399))
+* **js:** bump alpinejs from 3.15.8 to 3.15.9 ([1ea992f](https://github.com/photoserv/photoserv/commit/1ea992f9e0465aff1f14856661c659d3c5880529))
+* **js:** bump tailwindcss from 4.2.1 to 4.2.2 ([1804c39](https://github.com/photoserv/photoserv/commit/1804c391ae1ef8e0bf9c585385873ef3ed51bfdf))
+* **python:** bump celery from 5.6.2 to 5.6.3 ([a8b01b1](https://github.com/photoserv/photoserv/commit/a8b01b1c77b7af2d3f1e09dada06f7916287d4b0))
+* **python:** bump django-crispy-forms from 2.5 to 2.6 ([a0bcef3](https://github.com/photoserv/photoserv/commit/a0bcef3f15ae7b2f25c6d7c02a59a7ed3e32a3ab))
+* **python:** bump djangorestframework from 3.16.1 to 3.17.1 ([e9e4086](https://github.com/photoserv/photoserv/commit/e9e40867372d7ea68a5acfd46359ae543998b4f5))
+* **python:** bump gunicorn from 25.1.0 to 25.3.0 ([49ebd28](https://github.com/photoserv/photoserv/commit/49ebd280f76c0d8f0f5332f86642fc227d7155cc))
+* **python:** bump python-dotenv from 1.2.1 to 1.2.2 ([c7a5cd3](https://github.com/photoserv/photoserv/commit/c7a5cd3a03a7c31f87b05ac1d12868316a0dfe80))
+
 ## [0.9.3](https://github.com/photoserv/photoserv/compare/0.9.2...0.9.3) (2026-03-27)
 
 

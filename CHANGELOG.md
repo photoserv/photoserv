@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.5](https://github.com/photoserv/photoserv/compare/0.9.4...0.9.5) (2026-04-04)
+
+
+### Bug Fixes
+
+* Set OSM referrer ([1e604f8](https://github.com/photoserv/photoserv/commit/1e604f8caf69f63cb09a92507efe58e0cd63fe32))
+
 ## [0.9.4](https://github.com/photoserv/photoserv/compare/0.9.3...0.9.4) (2026-04-02)
 
 

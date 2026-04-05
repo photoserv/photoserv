@@ -3,7 +3,7 @@ from django.core.cache import cache
 from celery import shared_task
 from celery.exceptions import Ignore
 from django.conf import settings
-from .models import WebRequest, IntegrationCaller, PythonPlugin
+from .models import WebRequest, IntegrationCaller, PythonPlugin, RunResult
 from datetime import timedelta
 from django.utils import timezone
 from .models import PluginEntityParameters
@@ -261,7 +261,7 @@ def scan_plugins():
 def consistency():
     # Delete all integration run results older than 1 year
     one_year_ago = timezone.now() - timedelta(days=365)
-    deleted_count, _ = WebRequest.objects.filter(
+    deleted_count, _ = RunResult.objects.filter(
         start_timestamp__lt=one_year_ago
     ).delete()
 

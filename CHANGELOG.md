@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.7](https://github.com/photoserv/photoserv/compare/0.9.6...0.9.7) (2026-04-05)
+
+
+### Bug Fixes
+
+* Provide referrer to OSM on pin inputs ([c390afd](https://github.com/photoserv/photoserv/commit/c390afd5f8fb53f6fc569001a75de76a74bbe3ef))
+
 ## [0.9.6](https://github.com/photoserv/photoserv/compare/0.9.5...0.9.6) (2026-04-05)
 
 

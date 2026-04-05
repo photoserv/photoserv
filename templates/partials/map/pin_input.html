@@ -67,7 +67,8 @@ Usage in forms:
                     // OSM Streets
                     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
-                        attribution: '© OpenStreetMap contributors'
+                        attribution: '© OpenStreetMap contributors',
+                        referrerPolicy: 'strict-origin-when-cross-origin'
                     });
                     osm.addTo(self.leafletMap);
                     

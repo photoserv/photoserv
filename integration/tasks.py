@@ -196,7 +196,7 @@ def debounced_task(key_generator, delay=settings.INTEGRATION_QUEUE_DELAY):
     return decorator
 
 
-def queue_global_integrations(**kwargs):
+def queue_global_integrations(*args, **kwargs):
     """Queue all global integrations (web requests and global plugins)."""
     # Queue web requests
     web_requests = WebRequest.objects.filter(active=True)

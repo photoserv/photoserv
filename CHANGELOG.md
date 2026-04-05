@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.6](https://github.com/photoserv/photoserv/compare/0.9.5...0.9.6) (2026-04-05)
+
+
+### Bug Fixes
+
+* Fix queue_global_integrations() takes 0 positional arguments but 1 was given ([4451667](https://github.com/photoserv/photoserv/commit/44516673545ae429a661d8e7b8a4109233856fa0))
+* Integration consistency querying wrong model ([e5e5c4c](https://github.com/photoserv/photoserv/commit/e5e5c4c0cb19b2c76788bb6ea17f367284ff4a87))
+
 ## [0.9.5](https://github.com/photoserv/photoserv/compare/0.9.4...0.9.5) (2026-04-04)
 
 

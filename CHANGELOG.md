@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.9.8](https://github.com/photoserv/photoserv/compare/0.9.7...0.9.8) (2026-05-17)
+
+
+### Bug Fixes
+
+* Code changes for django-tables2 3.0.0 ([8f875fc](https://github.com/photoserv/photoserv/commit/8f875fc24865116b6fdacea8f90bb143f6d51f51))
+
+
+### Dependencies
+
+* **js:** bump @alpinejs/sort from 3.15.10 to 3.15.12 ([5d08442](https://github.com/photoserv/photoserv/commit/5d08442cd0a7b95e165df039ae10f965364b4a52))
+* **js:** bump @codemirror/view from 6.40.0 to 6.42.1 ([c2f0914](https://github.com/photoserv/photoserv/commit/c2f0914e57cbae7a517c1e0447711453cf11a658))
+* **js:** bump @tailwindcss/cli from 4.2.2 to 4.2.4 ([b43797d](https://github.com/photoserv/photoserv/commit/b43797de7bf5e6351412fc18ecd43e058a6d9c25))
+* **js:** bump alpinejs from 3.15.9 to 3.15.12 ([a0439b0](https://github.com/photoserv/photoserv/commit/a0439b0f77a40788ec8fb68332fee06a75ba2c1d))
+* **js:** bump esbuild from 0.27.2 to 0.28.0 ([ac20328](https://github.com/photoserv/photoserv/commit/ac20328a0da58623375c9127e19efd1532fea82b))
+* **python:** bump django from 6.0.3 to 6.0.4 ([c3130bb](https://github.com/photoserv/photoserv/commit/c3130bb3d444b469f7ef36c149059e0dd35e06b7))
+* **python:** bump django-tables2 from 2.8.0 to 3.0.0 ([7aa17b3](https://github.com/photoserv/photoserv/commit/7aa17b31dba026e256e6657ee3369ef73874c092))
+* **python:** bump psycopg2-binary from 2.9.11 to 2.9.12 ([c330f5f](https://github.com/photoserv/photoserv/commit/c330f5f86d5ae2d3d79115d7366ed93951a615ea))
+* **python:** bump redis from 7.2.1 to 7.4.0 ([f799f69](https://github.com/photoserv/photoserv/commit/f799f697d2ebc8ecc1c33a85868c26476117c7c2))
+* **python:** update pillow requirement from &lt;=12.1.1 to &lt;=12.2.0 ([659b858](https://github.com/photoserv/photoserv/commit/659b8587c8386ba6aaa1a791beefaa92b077dc03))
+
 ## [0.9.7](https://github.com/photoserv/photoserv/compare/0.9.6...0.9.7) (2026-04-05)
 
 

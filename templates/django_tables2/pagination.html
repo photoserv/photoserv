@@ -2,7 +2,7 @@
 <div class="w-full overflow-x-auto pb-2 pt-4 flex flex-col items-center gap-2">
     <div class="join inline-flex">
         {% if table.page.has_previous %}
-        <a class="join-item btn" href="{% querystring table.prefixed_page_field=table.page.previous_page_number %}">Prev</a>
+        <a class="join-item btn" href="{% querystring_replace table.prefixed_page_field=table.page.previous_page_number %}">Prev</a>
         {% else %}
         <button class="join-item btn btn-disabled">Prev</button>
         {% endif %}
@@ -14,13 +14,13 @@
             {% elif p == table.page.number %}
                 <button class="join-item btn btn-active">{{ p }}</button>
             {% else %}
-                <a class="join-item btn" href="{% querystring table.prefixed_page_field=p %}">{{ p }}</a>
+                <a class="join-item btn" href="{% querystring_replace table.prefixed_page_field=p %}">{{ p }}</a>
             {% endif %}
         {% endfor %}
         {% endspaceless %}
 
         {% if table.page.has_next %}
-        <a class="join-item btn" href="{% querystring table.prefixed_page_field=table.page.next_page_number %}">Next</a>
+        <a class="join-item btn" href="{% querystring_replace table.prefixed_page_field=table.page.next_page_number %}">Next</a>
         {% else %}
         <button class="join-item btn btn-disabled">Next</button>
         {% endif %}
@@ -28,11 +28,11 @@
 
     <div class="text-sm">
         Show [
-            <a href="{% querystring table.prefixed_per_page_field=10 %}" class="link decoration-dotted">10</a> |
-            <a href="{% querystring table.prefixed_per_page_field=20 %}" class="link decoration-dotted">20</a> |
-            <a href="{% querystring table.prefixed_per_page_field=50 %}" class="link decoration-dotted">50</a> |
-            <a href="{% querystring table.prefixed_per_page_field=100 %}" class="link decoration-dotted">100</a> |
-            <a href="{% querystring table.prefixed_per_page_field=1000 %}" class="link decoration-dotted">1000</a>
+            <a href="{% querystring_replace table.prefixed_per_page_field=10 %}" class="link decoration-dotted">10</a> |
+            <a href="{% querystring_replace table.prefixed_per_page_field=20 %}" class="link decoration-dotted">20</a> |
+            <a href="{% querystring_replace table.prefixed_per_page_field=50 %}" class="link decoration-dotted">50</a> |
+            <a href="{% querystring_replace table.prefixed_per_page_field=100 %}" class="link decoration-dotted">100</a> |
+            <a href="{% querystring_replace table.prefixed_per_page_field=1000 %}" class="link decoration-dotted">1000</a>
         ] Items
     </div>
 </div>

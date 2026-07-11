@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.9](https://github.com/photoserv/photoserv/compare/0.9.8...0.9.9) (2026-07-11)
+
+
+### Dependencies
+
+* **js:** bump @codemirror/view from 6.42.1 to 6.43.4 ([0b2a4d3](https://github.com/photoserv/photoserv/commit/0b2a4d3ffb376243cd10dedd101374c4629279a7))
+* **js:** bump @tailwindcss/cli from 4.2.4 to 4.3.2 ([ffe432a](https://github.com/photoserv/photoserv/commit/ffe432a41cbe7f7913b62458b7e2b6b301b78ec1))
+* **js:** bump daisyui from 5.5.19 to 5.6.6 ([797594a](https://github.com/photoserv/photoserv/commit/797594a435c333728450e6d4542e4a1928d544e6))
+* **js:** bump esbuild from 0.28.0 to 0.28.1 ([6ef9402](https://github.com/photoserv/photoserv/commit/6ef9402fc574abdfa11a36103c7cd898ae771d82))
+* **js:** bump tailwindcss from 4.2.4 to 4.3.2 ([d7e6686](https://github.com/photoserv/photoserv/commit/d7e66868429b2be6bbc048ae171a0932dc9f6ab3))
+* **python:** bump django from 6.0.4 to 6.0.6 ([26d74fd](https://github.com/photoserv/photoserv/commit/26d74fd85a27dcdd10a50dfa628307105d9034f6))
+* **python:** bump gunicorn from 25.3.0 to 26.0.0 ([8d8672b](https://github.com/photoserv/photoserv/commit/8d8672b1ee7f51bce7ec5868b8d097d50cede14d))
+* **python:** bump redis from 7.4.0 to 8.0.1 ([fa19c9d](https://github.com/photoserv/photoserv/commit/fa19c9df5a312b4dc2897098fc3fcc374b79ebb9))
+
 ## [0.9.8](https://github.com/photoserv/photoserv/compare/0.9.7...0.9.8) (2026-05-17)
 
 

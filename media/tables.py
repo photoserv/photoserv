@@ -6,7 +6,7 @@ from .models import *
 class PhotoTable(tables.Table):
     id = tables.Column(linkify=True)
     thumbnail = tables.TemplateColumn(
-        template_name="core/partials/photo_small_thumbnail.html",
+        template_name="media/partials/photo_small_thumbnail.html",
         verbose_name="Thumbnail",
         orderable=False,
     )
@@ -37,13 +37,13 @@ class SizeTable(tables.Table):
     square_crop = tables.BooleanColumn()
 
     edit = tables.TemplateColumn(
-        template_name="core/partials/size_table_edit_button.html",
+        template_name="media/partials/size_table_edit_button.html",
         verbose_name="Edit",
         orderable=False
     )
 
     delete = tables.TemplateColumn(
-        template_name="core/partials/size_table_delete_button.html",
+        template_name="media/partials/size_table_delete_button.html",
         verbose_name="Delete",
         orderable=False
     )
@@ -65,7 +65,7 @@ class AlbumTable(tables.Table):
 class PhotoListTable(tables.Table):
     class Meta:
         model = Photo
-        template_name = "core/partials/photo_table.html"
+        template_name = "media/partials/photo_table.html"
 
 
 class TagTable(tables.Table):

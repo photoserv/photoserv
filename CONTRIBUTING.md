@@ -1,16 +1,30 @@
 # Contributing to Photoserv
 
+# 1.0 Branch Committed Changes:
+
+(for future changelog after squash merge)
+
+* Rename 'core' to 'media'
+* Newer API schema
+    * Session Auth supported
+    * Read/write endpoints for resources
+    * Write requires permission on API key
+* Authentication is now enforced; no anonymous mode.
+
+# 1.0 Change List (TODO):
+
+* Implement publishing channels; publishing logic fully owned by Media
+* Remove public_rest_api; apps to own APIs
+* Photo calendar shall be based on publishing channels
+* A photo shall not be published until all sizes are generated
+* All integrations shall be python based
+* Integrations subscribe to a publishing channel
+
 ## Architecture
 
 This must be respected when contributing.
 
-* **Core** contains core business logic and models for media. It only depends on "utility" apps.
-    * Caveat: `core.PhotoForm` imports from `integration` because I couldn't find a better way to do this.
-    It is done in such a way to avoid circular dependency and provide loose-ish coupling.
-* **Public REST API** depends on core to expose read-only endpoints for external consumption (including integration).
-* **Integration** depends on core and public_rest_api to extend functionality via plugins and webhooks.
-* **Home** is a placeholder for dashboard functionality and depends on core.
-* **All other apps** are utility apps with no dependencies on core or each other. They can be lifted right into other projects if needed.
+// TODO: rewrite
 
 ## Development
 
@@ -46,7 +60,6 @@ Run tests before every commit.
 ### Python
 
 * Follow PEP 8 for imports (top of file)
-* Exception: Importing `integration` within `core.PhotoForm` is allowed to avoid circular dependency and loose-ish coupling.
 
 ### Templates
 
@@ -87,6 +100,8 @@ Example:
 
 ## Project Structure
 
+// TODO: Rewrite
+
 ```
 photoserv/
 ├── api_key/           # API key management
@@ -106,4 +121,4 @@ photoserv/
 
 * **README.md** - Installation and configuration
 * **Swagger** - `https://<your-instance>/swagger` (API documentation)
-* **GitHub** - https://github.com/photoserv/photoserv
+* **GitHub** - https://github.com/itsmaxymoo/photoserv

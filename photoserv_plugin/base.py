@@ -113,7 +113,7 @@ class PhotoservInstance:
             Binary file stream of the photo, or None if not found
         """
         # Import here to avoid circular imports
-        from core.models import Photo, PhotoSize
+        from media.models import Photo, PhotoSize
         
         # Extract photo identifier
         photo_id = None

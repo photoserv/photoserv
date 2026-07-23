@@ -10,17 +10,18 @@ from datetime import timedelta
 
 from .models import APIKey
 from .authentication import APIKeyAuthentication
-from .permissions import HasAPIKey
 
 
 # ---- Virtual api view ----
 class ProtectedView(APIView):
     authentication_classes = [APIKeyAuthentication]
-    permission_classes = [HasAPIKey]
 
     def get(self, request):
         return Response({"detail": "Access granted"})
 
+
+    def post(self, request):
+        return Response({"detail": "Access granted"})
 
 
 urlpatterns = [
@@ -117,3 +118,24 @@ class APIKeyAuthTests(TestCase):
             HTTP_AUTHORIZATION=""
         )
         self.assertEqual(response.status_code, 401)
+
+@override_settings(ROOT_URLCONF=__name__)
+class APIKeyWritePermissionTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.write_key = APIKey.create_key("test-key", write=True)
+        self.read_key = APIKey.create_key("read-key", write=False)
+
+    def test_post_with_write_permission_succeeds(self):
+        response = self.client.post(
+            "/api/",
+            HTTP_AUTHORIZATION=f"Bearer {self.write_key}"
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    def test_post_without_write_permission_fails(self):
+        response = self.client.post(
+            "/api/",
+            HTTP_AUTHORIZATION=f"Bearer {self.read_key}"
+        )
+        self.assertEqual(response.status_code, 403)

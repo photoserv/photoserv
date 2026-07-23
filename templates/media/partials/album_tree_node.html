@@ -10,7 +10,7 @@
             </span>
         </a>
         {% if node.children %}
-        {% include "core/partials/album_tree_node.html" with nodes=node.children %}
+        {% include "media/partials/album_tree_node.html" with nodes=node.children %}
         {% endif %}
     </li>
     {% endfor %}

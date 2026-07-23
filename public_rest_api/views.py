@@ -1,11 +1,10 @@
 from rest_framework import viewsets
-from core.models import Photo, Size
+from media.models import Photo, Size
 from .filters import PhotoFilterAPI
 from .serializers import *
 from django.http import FileResponse, Http404
 from rest_framework.generics import GenericAPIView
 from api_key.authentication import APIKeyAuthentication
-from api_key.permissions import HasAPIKey
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
@@ -23,16 +22,12 @@ INCLUDE_SIZES_PARAM = OpenApiParameter(
 
 
 class SizeViewSet(viewsets.ReadOnlyModelViewSet):
-    authentication_classes = [APIKeyAuthentication]
-    permission_classes = [HasAPIKey]
     serializer_class = SizeSerializer
     lookup_field = 'slug'
     queryset = Size.objects.filter(public=True)
 
 
 class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
-    authentication_classes = [APIKeyAuthentication]
-    permission_classes = [HasAPIKey]
     lookup_field = 'uuid'
     queryset = Photo.objects.filter(_published=True)
     filterset_class = PhotoFilterAPI
@@ -199,8 +194,6 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class PhotoImageAPIView(GenericAPIView):
-    authentication_classes = [APIKeyAuthentication]
-    permission_classes = [HasAPIKey]
     queryset = Photo.objects.filter(_published=True)
     lookup_field = "uuid"
 
@@ -215,8 +208,6 @@ class PhotoImageAPIView(GenericAPIView):
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
-    authentication_classes = [APIKeyAuthentication]
-    permission_classes = [HasAPIKey]
     lookup_field = 'uuid'
     queryset = Tag.objects.all()
 
@@ -238,8 +229,6 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class AlbumViewSet(viewsets.ReadOnlyModelViewSet):
-    authentication_classes = [APIKeyAuthentication]
-    permission_classes = [HasAPIKey]
     lookup_field = 'uuid'
     queryset = Album.objects.all()
 
@@ -286,12 +275,10 @@ class AlbumViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class SiteHealthAPIView(GenericAPIView):
-    authentication_classes = [APIKeyAuthentication]
-    permission_classes = [HasAPIKey]
     serializer_class = SiteHealthSerializer
 
     def get(self, request, *args, **kwargs):
-        from core.models import Photo, PhotoSize
+        from media.models import Photo, PhotoSize
 
         total_photos = Photo.objects.count()
         total_sizes = Size.objects.count()

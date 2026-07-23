@@ -44,7 +44,7 @@ class PhotoPluginExclusion(models.Model):
     Used to permanently exclude specific plugins from being notified about
     a photo's publish/unpublish events. These must be manually managed.
     """
-    photo = models.ForeignKey('core.Photo', on_delete=models.CASCADE, related_name='plugin_exclusions')
+    photo = models.ForeignKey('media.Photo', on_delete=models.CASCADE, related_name='plugin_exclusions')
     plugin = models.ForeignKey('PythonPlugin', on_delete=models.CASCADE, related_name='photo_exclusions')
     created_at = models.DateTimeField(auto_now_add=True)
 

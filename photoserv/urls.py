@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from core.urls import urlpatterns as core_urls
+from media.urls import urlpatterns as media_urls
 from public_rest_api.urls import urlpatterns as api_urls
 from api_key.urls import urlpatterns as api_key_urls
 from iam.urls import urlpatterns as iam_urls
@@ -24,6 +24,8 @@ from home.urls import urlpatterns as home_urls
 from job_overview.urls import urlpatterns as job_overview_urls
 from integration.urls import urlpatterns as integration_urls
 from drf_spectacular.views import SpectacularSwaggerView, SpectacularJSONAPIView
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 from errorhtml import views as error_views
 from .settings import DEBUG
 
@@ -34,14 +36,31 @@ handler500 = error_views.error_500
 
 urlpatterns = [
     path("api/", include(api_urls)),
-    path("", include(core_urls)),
+    path("", include(media_urls)),
     path("", include(api_key_urls)),
     path("", include(iam_urls)),
     path("", include(home_urls)),
     path("", include(job_overview_urls)),
     path("integrations/", include(integration_urls)),
-    path("swagger/", SpectacularSwaggerView.as_view(url_name="api-schema"), name="swagger"),
-    path("swagger/schema/", SpectacularJSONAPIView.as_view(), name="api-schema"),
+    # OpenAPI Schema
+    path(
+        "api/schema/",
+        SpectacularJSONAPIView.as_view(
+            authentication_classes=[SessionAuthentication],
+            permission_classes=[IsAuthenticated],
+        ),
+        name="api-schema",
+    ),
+    # Swagger UI
+    path(
+        "swagger/",
+        SpectacularSwaggerView.as_view(
+            url_name="api-schema",
+            authentication_classes=[SessionAuthentication],
+            permission_classes=[IsAuthenticated],
+        ),
+        name="swagger",
+    ),
 ]
 
 if DEBUG:

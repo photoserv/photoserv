@@ -1,4 +1,4 @@
-from core.models import Photo, Size, Album, Tag, PhotoMetadata, PhotoTag, PhotoSize
+from media.models import Photo, Size, Album, Tag, PhotoMetadata, PhotoTag, PhotoSize
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from drf_spectacular.utils import extend_schema_field

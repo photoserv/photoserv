@@ -9,7 +9,7 @@ class APIKeyTable(tables.Table):
         verbose_name="Edit",
         orderable=False,
         extra_context = {
-            "url_slug": "api-key-edit"
+            "url_slug": "apikey-edit"
         }
     )
 
@@ -18,11 +18,11 @@ class APIKeyTable(tables.Table):
         verbose_name="Delete",
         orderable=False,
         extra_context = {
-            "url_slug": "api-key-delete"
+            "url_slug": "apikey-delete"
         }
     )
 
     class Meta:
         model = APIKey
-        fields = ("id", 'name', 'is_active', "created_at", 'expires_on', "edit", "delete")
+        fields = ("id", 'name', 'is_active', 'write_access', "created_at", 'expires_on', "edit", "delete")
         order_by = ("id",)

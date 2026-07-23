@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 
-from core.mixins import CRUDGenericMixin
+from photoserv.mixins import CRUDGenericMixin
 from django.views.generic import DetailView, CreateView, UpdateView, DeleteView
 from django_tables2 import SingleTableView
 from .tables import APIKeyTable
@@ -12,10 +12,7 @@ from django.urls import reverse
 
 # Create your views here.
 class APIKeyMixin(CRUDGenericMixin):
-    object_type_name = "API Key"
-    object_type_name_plural = "API Keys"
-    object_url_name_slug = "api-key"
-    no_object_detail_page = True  # APIKeys do not have a detail page
+    no_object_detail_page = True
 
 
 class APIKeyListView(APIKeyMixin, SingleTableView):
@@ -41,7 +38,7 @@ class APIKeyCreateView(APIKeyMixin, CreateView):
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        return reverse("api-key-list")
+        return reverse("apikey-list")
 
 
 class APIKeyUpdateView(APIKeyMixin, UpdateView):
@@ -50,7 +47,7 @@ class APIKeyUpdateView(APIKeyMixin, UpdateView):
     template_name = "generic_crud_form.html"
 
     def get_success_url(self):
-        return reverse('api-key-list')
+        return reverse('apikey-list')
 
 
 class APIKeyDeleteView(APIKeyMixin, DeleteView):
@@ -58,4 +55,4 @@ class APIKeyDeleteView(APIKeyMixin, DeleteView):
     template_name = 'confirm_delete_generic.html'
 
     def get_success_url(self):
-        return reverse('api-key-list')
+        return reverse('apikey-list')

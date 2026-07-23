@@ -1,6 +1,6 @@
 from .tables import TaskResultTable
 from django_celery_results.models import TaskResult
-from core.mixins import CRUDGenericMixin
+from photoserv.mixins import CRUDGenericMixin
 from django_tables2.views import SingleTableView
 
 

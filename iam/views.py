@@ -4,7 +4,7 @@ from django.views.generic import DetailView, CreateView, UpdateView, DeleteView
 from django_tables2.views import SingleTableView
 from django.contrib.auth import views as auth_views
 from django.urls import reverse
-from core.mixins import CRUDGenericMixin
+from photoserv.mixins import CRUDGenericMixin
 from .models import User
 from .tables import UserTable
 from .forms import UserForm

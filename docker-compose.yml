@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/photoserv/photoserv:latest
+    image: ghcr.io/itsmaxymoo/photoserv:1
     restart: unless-stopped
     env_file: .env
     volumes:

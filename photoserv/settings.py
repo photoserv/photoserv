@@ -41,6 +41,7 @@ USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
+    "media",
     "core",
     "api_key",
     "public_rest_api",
@@ -182,11 +183,11 @@ CACHES = {
 
 CELERY_BEAT_SCHEDULE = {
     'run-consistency': {
-        'task': 'core.tasks.consistency',
+        'task': 'media.tasks.consistency',
         'schedule': 60.0 * 60 * 2,
     },
     'publish-photos': {
-        'task': 'core.tasks.publish_photos',
+        'task': 'media.tasks.publish_photos',
         'schedule': 60.0 * 10 if not DEBUG else 30.0,
     },
     'integration-consistency': {
@@ -221,8 +222,12 @@ REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
     'DEFAULT_PERMISSION_CLASSES': [
-        'api_key.permissions.HasAPIKey'
+        'api_key.permissions.IsAuthenticatedOrHasAPIKey',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'api_key.authentication.APIKeyAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',  # Only JSON, no HTML
     ),
@@ -251,7 +256,8 @@ SPECTACULAR_SETTINGS = {
             'statusCodes': ['5XX'],
             'retryConnectionErrors': True,
         }
-    }
+    },
+    'SCHEMA_PATH_PREFIX': '/api',
 }
 
 # --- IAM Config
@@ -283,7 +289,8 @@ OIDC_ENABLED = all([
     OIDC_OP_JWKS_ENDPOINT,
 ])
 
-AUTH_ENABLED = SIMPLE_AUTH or OIDC_ENABLED
+if not (SIMPLE_AUTH or OIDC_ENABLED):
+    raise ValueError("Authentication must be configured.")
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

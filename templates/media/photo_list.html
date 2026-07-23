@@ -9,6 +9,10 @@
     Photo Calendar
 </a>
 
+<a href="{% url object_url_name_slug|add:'-create-multiple' %}" class="btn btn-primary">
+    Create Multiple
+</a>
+
 
 {% endblock %}
 
@@ -16,6 +20,6 @@
 {{ block.super }}
 
 <!-- Filter Form -->
-{% include "core/partials/photo_filter_form.html" %}
+{% include "media/partials/photo_filter_form.html" %}
 
 {% endblock %}

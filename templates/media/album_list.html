@@ -12,11 +12,6 @@
         {% block header_buttons %}
         {% endblock %}
         {% if can_directly_create %}
-        {% if formset_support %}
-        <a href="{% url object_url_name_slug|add:'-create-multiple' %}" class="btn btn-primary">
-            Create Multiple
-        </a>
-        {% endif %}
         <a href="{% url object_url_name_slug|add:'-create' %}" class="btn btn-primary">
             Create
         </a>
@@ -26,7 +21,7 @@
 
 <div class="overflow-x-hidden">
     <div class="bg-base-200 w-full box-border w-full">
-        {% include "core/partials/album_tree_node.html" with nodes=album_tree %}
+        {% include "media/partials/album_tree_node.html" with nodes=album_tree %}
     </div>
 </div>
 {% endblock %}

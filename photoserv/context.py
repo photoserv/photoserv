@@ -11,6 +11,5 @@ def global_context(request):
         "SIMPLE_AUTH_ENABLED": settings.SIMPLE_AUTH,
         "OIDC_AUTH_ENABLED": settings.OIDC_ENABLED,
         "OIDC_PROVIDER_NAME": settings.OIDC_NAME,
-        "AUTH_ENABLED": settings.AUTH_ENABLED,
         "APP_VERSION": VERSION,
     }

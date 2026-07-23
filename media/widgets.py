@@ -7,7 +7,7 @@ class PhotoTagWidget(forms.SelectMultiple):
     """
     Call tag_input.html template to render a text input for tags
     """
-    template_name = 'core/partials/tag_input.html'
+    template_name = 'media/partials/tag_input.html'
 
 
 class CrispyRangeWidget(SuffixedMultiWidget):
@@ -15,7 +15,7 @@ class CrispyRangeWidget(SuffixedMultiWidget):
     Custom range widget that uses a template to render min/max inputs with crispy forms.
     Supports different input types via the 'type' attribute (number, date, datetime-local, etc.)
     """
-    template_name = 'core/partials/range_widget.html'
+    template_name = 'media/partials/range_widget.html'
     suffixes = ["min", "max"]
 
     def __init__(self, attrs=None, input_type='text'):
@@ -88,7 +88,7 @@ class CrispyShutterSpeedRangeWidget(SuffixedMultiWidget):
     """
     Range widget for shutter speed that accepts both decimal and fractional notation.
     """
-    template_name = 'core/partials/range_widget.html'
+    template_name = 'media/partials/range_widget.html'
     suffixes = ["min", "max"]
 
     def __init__(self, attrs=None):

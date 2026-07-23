@@ -12,11 +12,6 @@
         {% block header_buttons %}
         {% endblock %}
         {% if can_directly_create %}
-            {% if formset_support %}
-            <a href="{% url object_url_name_slug|add:'-create-multiple' %}" class="btn btn-primary">
-                Create Multiple
-            </a>
-            {% endif %}
             <a href="{% url object_url_name_slug|add:'-create' %}" class="btn btn-primary">
                 Create
             </a>

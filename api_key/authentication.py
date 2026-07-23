@@ -22,7 +22,7 @@ class APIKeyAuthentication(BaseAuthentication):
         # Check all active API keys
         for api_key in APIKey.objects.filter(is_active=True):
             if api_key.check_key(key):
-                return (None, key)  # valid key
+                return (None, api_key)  # valid key
 
         raise AuthenticationFailed("Invalid API key.")
 

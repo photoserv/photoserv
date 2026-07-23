@@ -1,7 +1,7 @@
 import django_filters
 from django import forms
-from core.models import Photo, Album, Tag
-from core.filters import PhotoFilter
+from media.models import Photo, Album, Tag
+from media.filters import PhotoFilter
 
 
 class PhotoFilterAPI(PhotoFilter):

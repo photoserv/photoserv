@@ -27,14 +27,14 @@ class PhotoModelTests(TestCase):
         url = self.photo.get_absolute_url()
         self.assertIn(str(self.photo.pk), url)
 
-    @mock.patch("core.tasks.post_photo_create.delay_on_commit")
+    @mock.patch("media.tasks.post_photo_create.delay_on_commit")
     def test_save_triggers_tasks_on_create(self, mock_post_photo_create):
         p = Photo(title="Another", raw_image="raw.jpg")
         p.save(schedule_followup_tasks=True)
 
         self.assertTrue(mock_post_photo_create.called)
 
-    @mock.patch("core.tasks.delete_files.delay_on_commit")
+    @mock.patch("media.tasks.delete_files.delay_on_commit")
     def test_delete_triggers_delete_files(self, mock_delete):
         self.photo.delete()
         self.assertTrue(mock_delete.called)
@@ -72,7 +72,7 @@ class PhotoModelTests(TestCase):
 
 
 class PhotoFormTests(TestCase):
-    @mock.patch("core.tasks.post_photo_create.delay_on_commit")
+    @mock.patch("media.tasks.post_photo_create.delay_on_commit")
     @mock.patch("django.core.files.storage.FileSystemStorage.save")
     @mock.patch("PIL.Image.open")
     def test_new_photo_schedules_post_photo_create(self, mock_image_open, mock_storage_save, mock_post_photo_create):
@@ -109,7 +109,7 @@ class PhotoFormTests(TestCase):
         # Verify post_photo_create was called with the photo's id
         mock_post_photo_create.assert_called_once_with(photo.id)
     
-    @mock.patch("core.tasks.post_photo_create.delay_on_commit")
+    @mock.patch("media.tasks.post_photo_create.delay_on_commit")
     def test_existing_photo_does_not_schedule_post_photo_create(self, mock_post_photo_create):
         """Ensure for an existing photo, post_photo_create is not called"""
         from .forms import PhotoForm
@@ -167,7 +167,7 @@ class PhotoFormTests(TestCase):
         # Note: update_published is called during Photo.save() when is_new=False
         mock_update_published.assert_called_with(dispatch_signals=True)
     
-    @mock.patch("core.tasks.photo_replace_image.delay_on_commit")
+    @mock.patch("media.tasks.photo_replace_image.delay_on_commit")
     @mock.patch("django.core.files.storage.FileSystemStorage.save")
     @mock.patch("PIL.Image.open")
     def test_photo_image_replaced(self, mock_image_open, mock_storage_save, mock_photo_replace_image):
@@ -709,7 +709,7 @@ class SizeTests(TestCase):
         with self.assertRaises(ValidationError):
             builtin.delete()
 
-    @mock.patch("core.tasks.generate_photo_sizes_for_size.delay_on_commit")
+    @mock.patch("media.tasks.generate_photo_sizes_for_size.delay_on_commit")
     def test_save_triggers_task(self, mock_generate):
         self.size.save()
         self.assertTrue(mock_generate.called)
@@ -756,8 +756,8 @@ class PhotoPublishStateTests(TestCase):
             _published=False,
         )
 
-    @mock.patch("core.signals.photo_published.send")
-    @mock.patch("core.signals.photo_unpublished.send")
+    @mock.patch("media.signals.photo_published.send")
+    @mock.patch("media.signals.photo_unpublished.send")
     def test_becomes_published_updates_and_dispatches(self, mock_unpub, mock_pub):
         """When transitioning to published: updates DB and dispatches photo_published."""
         self.photo.hidden = False
@@ -771,8 +771,8 @@ class PhotoPublishStateTests(TestCase):
         mock_pub.assert_called_once_with(Photo, instance=self.photo, uuid=self.photo.uuid)
         mock_unpub.assert_not_called()
 
-    @mock.patch("core.signals.photo_published.send")
-    @mock.patch("core.signals.photo_unpublished.send")
+    @mock.patch("media.signals.photo_published.send")
+    @mock.patch("media.signals.photo_unpublished.send")
     def test_becomes_unpublished_updates_and_dispatches(self, mock_unpub, mock_pub):
         """When transitioning to unpublished: updates DB and dispatches photo_unpublished."""
         self.photo._published = True
@@ -784,8 +784,8 @@ class PhotoPublishStateTests(TestCase):
         mock_pub.assert_not_called()
         mock_unpub.assert_called_once_with(Photo, instance=self.photo, uuid=self.photo.uuid)
 
-    @mock.patch("core.signals.photo_published.send")
-    @mock.patch("core.signals.photo_unpublished.send")
+    @mock.patch("media.signals.photo_published.send")
+    @mock.patch("media.signals.photo_unpublished.send")
     @mock.patch.object(Photo, "save")
     def test_no_change_when_state_same(self, mock_save, mock_unpub, mock_pub):
         """No changes → no save, no signals."""
@@ -799,7 +799,7 @@ class PhotoPublishStateTests(TestCase):
         mock_pub.assert_not_called()
         mock_unpub.assert_not_called()
 
-    @mock.patch("core.signals.photo_published.send")
+    @mock.patch("media.signals.photo_published.send")
     @mock.patch.object(Photo, "save")
     def test_no_update_model_flag_skips_save(self, mock_save, mock_pub):
         """update_model=False skips DB save but dispatches signal."""
@@ -813,7 +813,7 @@ class PhotoPublishStateTests(TestCase):
         mock_pub.assert_called_once_with(Photo, instance=self.photo, uuid=self.photo.uuid)
         assert self.photo._published is False  # unchanged in-memory
 
-    @mock.patch("core.signals.photo_published.send")
+    @mock.patch("media.signals.photo_published.send")
     def test_no_dispatch_flag_skips_signal(self, mock_pub):
         """dispatch=False updates DB but skips signal dispatch."""
         self.photo.hidden = False
@@ -825,7 +825,7 @@ class PhotoPublishStateTests(TestCase):
         assert self.photo._published is True
         mock_pub.assert_not_called()
     
-    @mock.patch("core.signals.photo_unpublished.send")
+    @mock.patch("media.signals.photo_unpublished.send")
     def test_photo_deleted_dispatches_unpublished(self, mock_unpub):
         """Deleting a published photo dispatches photo_unpublished."""
         self.photo.hidden = False
@@ -836,7 +836,7 @@ class PhotoPublishStateTests(TestCase):
 
         mock_unpub.assert_called_once_with(Photo, instance=self.photo, uuid=self.photo.uuid)
     
-    @mock.patch("core.signals.photo_unpublished.send")
+    @mock.patch("media.signals.photo_unpublished.send")
     def test_photo_deleted_unpublished_no_signal_if_unpublished(self, mock_unpub):
         """Deleting an unpublished photo does not dispatch photo_unpublished."""
         self.photo.hidden = True
@@ -846,80 +846,6 @@ class PhotoPublishStateTests(TestCase):
         self.photo.delete()
 
         mock_unpub.assert_not_called()
-
-
-class TestMigrations(TestCase):
-
-    @property
-    def app(self):
-        return apps.get_containing_app_config(type(self).__module__).name
-
-    migrate_from = None
-    migrate_to = None
-
-    def setUp(self):
-        assert self.migrate_from and self.migrate_to, \
-            "TestCase '{}' must define migrate_from and migrate_to properties".format(type(self).__name__)
-        self.migrate_from = [(self.app, self.migrate_from)]
-        self.migrate_to = [(self.app, self.migrate_to)]
-        executor = MigrationExecutor(connection)
-        old_apps = executor.loader.project_state(self.migrate_from).apps
-
-        # Reverse to the original migration
-        executor.migrate(self.migrate_from)
-
-        self.setUpBeforeMigration(old_apps)
-
-        # Run the migration to test
-        executor = MigrationExecutor(connection)
-        executor.loader.build_graph()  # reload.
-        executor.migrate(self.migrate_to)
-
-        self.apps = executor.loader.project_state(self.migrate_to).apps
-
-    def setUpBeforeMigration(self, apps):
-        pass
-
-
-class TestMigration0003(TestMigrations):
-    migrate_from = "0002_album_parent_photo_hidden"
-    migrate_to = "0003_core_entity_common_base"
-
-    def setUpBeforeMigration(self, apps):
-        # Use old apps registry to create multiple pre-migration Size objects
-        SizeOld = apps.get_model("core", "Size")
-
-        self.sizes = []
-        for i in range(5):
-            size = SizeOld.objects.create(
-                slug=f"size-{i}",
-                max_dimension=100 * (i + 1),
-                can_edit=True,
-            )
-            self.sizes.append(size)
-
-    @skipIf(
-        getattr(settings, "DB_ENGINE", None) == "sqlite",
-        "Skipping test because DB_ENGINE is sqlite."
-    )
-    def test_size_uuids_populated_and_unique_after_migration(self):
-        # Use post-migration apps registry
-        SizeNew = self.apps.get_model("core", "Size")
-
-        uuids = set()
-        for old_size in self.sizes:
-            size_after = SizeNew.objects.get(pk=old_size.pk)
-            
-            # Assert UUID exists
-            self.assertTrue(hasattr(size_after, "uuid"))
-            self.assertIsNotNone(size_after.uuid)
-            
-            # Assert UUID is unique
-            self.assertNotIn(size_after.uuid, uuids)
-            uuids.add(size_after.uuid)
-
-        # Extra check: all UUIDs are unique
-        self.assertEqual(len(uuids), len(self.sizes))
 
 
 class PhotoLocationTests(TestCase):

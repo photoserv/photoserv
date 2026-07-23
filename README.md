@@ -17,7 +17,8 @@ for their publicly published photos.
     * For example, a photo portfolio website in Astro.js can consume this.
     * Swagger API browser included.
 * Define multiple sizes for your photos to be available in.
-* OIDC and simple auth optional.
+* OIDC and/or simple authentication.
+    * As of version 1.0, some kind of authentication is mandatory.
 * Web request dispatch upon global changes.
 * Python plugin system for advanced integrations.
 

@@ -3,19 +3,27 @@ from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 class OIDCAuthenticationBackend(OIDCAuthenticationBackend):
     def create_user(self, claims):
         """Create a user from OIDC claims."""
+        first_user = not self.UserModel.objects.exists()
         user = super().create_user(claims)
         user.username = self.get_username(claims)
         user.first_name = self.get_first_name(claims)
         user.last_name = self.get_given_name(claims)
+        if first_user:
+            user.is_staff = True
+            user.is_superuser = True
         user.save()
         return user
 
     def update_user(self, user, claims):
         """Update user each login to sync username."""
+        only_user = self.UserModel.objects.count() == 1
         user = super().update_user(user, claims)
         user.username = self.get_username(claims)
         user.first_name = self.get_first_name(claims)
         user.last_name = self.get_given_name(claims)
+        if only_user:
+            user.is_staff = True
+            user.is_superuser = True
         user.save()
         return user
 

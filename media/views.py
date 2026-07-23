@@ -9,7 +9,7 @@ from .models import *
 from .forms import *
 from .tables import *
 from .filters import PhotoFilter
-from .mixins import CRUDGenericMixin
+from photoserv.mixins import CRUDGenericMixin
 from django.http import FileResponse, Http404
 import calendar
 from collections import defaultdict
@@ -17,17 +17,10 @@ import json
 
 #region Photo
 
-class PhotoMixin(CRUDGenericMixin):
-    object_type_name = "Photo"
-    object_type_name_plural = "Photos"
-    object_url_name_slug = "photo"
-    formset_support = True
-
-
-class PhotoListView(PhotoMixin, FilterView, SingleTableView):
+class PhotoListView(CRUDGenericMixin, FilterView, SingleTableView):
     model = Photo
     table_class = PhotoTable
-    template_name = "core/photo_list.html"
+    template_name = "media/photo_list.html"
     filterset_class = PhotoFilter
 
     paginate_by = 10
@@ -37,7 +30,7 @@ class PhotoListView(PhotoMixin, FilterView, SingleTableView):
         return queryset.select_related('metadata').prefetch_related('albums', 'tags')
 
 
-class PhotoDetailView(DetailView):
+class PhotoDetailView(CRUDGenericMixin, DetailView):
     model = Photo
 
     def get_context_data(self, **kwargs):
@@ -66,10 +59,10 @@ class PhotoImageView(DetailView):
         return FileResponse(image_file.open('rb'), content_type='image/jpeg')
 
 
-class PhotoCreateView(PhotoMixin, CreateView):
+class PhotoCreateView(CRUDGenericMixin, CreateView):
     model = Photo
     form_class = PhotoForm
-    template_name = "core/photo_form.html"
+    template_name = "media/photo_form.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -110,8 +103,8 @@ class PhotoCreateView(PhotoMixin, CreateView):
         return reverse('photo-detail', kwargs={'pk': self.object.pk})
 
 
-class PhotoCreateMultipleView(PhotoMixin, View):
-    template_name = "core/photo_formset.html"
+class PhotoCreateMultipleView(CRUDGenericMixin, View):
+    template_name = "media/photo_formset.html"
 
     def get(self, request, *args, **kwargs):
         formset = PhotoFormSet(queryset=Photo.objects.none())  # empty forms
@@ -125,8 +118,9 @@ class PhotoCreateMultipleView(PhotoMixin, View):
         return render(request, self.template_name, {"formset": formset})
 
 
-class PhotoCalendarView(TemplateView):
-    template_name = "core/photo_calendar.html"
+class PhotoCalendarView(CRUDGenericMixin, TemplateView):
+    template_name = "media/photo_calendar.html"
+    model = Photo
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -211,10 +205,10 @@ class PhotoCalendarView(TemplateView):
         )
         return context
 
-class PhotoUpdateView(PhotoMixin, UpdateView):
+class PhotoUpdateView(CRUDGenericMixin, UpdateView):
     model = Photo
     form_class = PhotoForm
-    template_name = "core/photo_form.html"
+    template_name = "media/photo_form.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -255,7 +249,7 @@ class PhotoUpdateView(PhotoMixin, UpdateView):
         return reverse('photo-detail', kwargs={'pk': self.object.pk})
 
 
-class PhotoDeleteView(DeleteView):
+class PhotoDeleteView(CRUDGenericMixin, DeleteView):
     model = Photo
     template_name = 'confirm_delete_generic.html'
 
@@ -311,14 +305,7 @@ class SizeDeleteView(SizeMixin, DeleteView):
 
 #region Albums
 
-
-class AlbumMixin(CRUDGenericMixin):
-    object_type_name = "Album"
-    object_type_name_plural = "Albums"
-    object_url_name_slug = "album"
-
-
-class AlbumDetailView(DetailView):
+class AlbumDetailView(CRUDGenericMixin, DetailView):
     model = Album
 
     def get_context_data(self, **kwargs):
@@ -331,8 +318,9 @@ class AlbumDetailView(DetailView):
         return context
 
 
-class AlbumListView(AlbumMixin, TemplateView):
-    template_name = "core/album_list.html"
+class AlbumListView(CRUDGenericMixin, TemplateView):
+    template_name = "media/album_list.html"
+    model = Album
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -357,7 +345,7 @@ class AlbumListView(AlbumMixin, TemplateView):
         return context
 
 
-class AlbumCreateView(AlbumMixin, CreateView):
+class AlbumCreateView(CRUDGenericMixin, CreateView):
     model = Album
     form_class = AlbumForm
     template_name = "generic_crud_form.html"
@@ -366,10 +354,10 @@ class AlbumCreateView(AlbumMixin, CreateView):
         return reverse('album-detail', kwargs={'pk': self.object.pk})
 
 
-class AlbumUpdateView(AlbumMixin, UpdateView):
+class AlbumUpdateView(CRUDGenericMixin, UpdateView):
     model = Album
     form_class = AlbumForm
-    template_name = "core/album_form.html"
+    template_name = "media/album_form.html"
 
     def form_valid(self, form):
         # Save the Album itself first
@@ -387,7 +375,7 @@ class AlbumUpdateView(AlbumMixin, UpdateView):
         return reverse('album-detail', kwargs={'pk': self.object.pk})
 
 
-class AlbumDeleteView(AlbumMixin, DeleteView):
+class AlbumDeleteView(CRUDGenericMixin, DeleteView):
     model = Album
     template_name = 'confirm_delete_generic.html'
 
@@ -399,11 +387,8 @@ class AlbumDeleteView(AlbumMixin, DeleteView):
 #region Tags
 
 class TagMixin(CRUDGenericMixin):
-    object_type_name = "Tag"
-    object_type_name_plural = "Tags"
-    object_url_name_slug = "tag"
     edit_disclaimer = "Renaming a tag will update all photos that use this tag. Deleting a tag will remove it from all photos."
-    can_directly_create = False  # Tags are managed through the photo form, not directly
+    can_directly_create = False
 
 
 class TagListView(TagMixin, SingleTableView):

@@ -8,9 +8,9 @@ from .models import *
 from .forms import *
 from .tables import *
 from .tasks import scan_plugins, call_queue_global_integrations, call_single_plugin_signal
-from core.mixins import CRUDGenericMixin
+from photoserv.mixins import CRUDGenericMixin
 from django_tables2 import RequestConfig
-from core.models import Photo
+from media.models import Photo
 import json
 
 

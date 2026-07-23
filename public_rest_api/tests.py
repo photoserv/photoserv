@@ -2,7 +2,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.core.files.uploadedfile import SimpleUploadedFile
-from core.models import *
+from media.models import *
 from api_key.models import APIKey
 import io
 from PIL import Image

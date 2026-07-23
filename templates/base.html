@@ -44,10 +44,9 @@
                         x-show="openNavMenu" x-transition @click.outside="openNavMenu = false">
 
                         <li><a href="{% url 'size-list' %}">Sizes</a></li>
-                        <li><a href="{% url 'api-key-list' %}">Public API</a></li>
+                        <li><a href="{% url 'apikey-list' %}">API</a></li>
                         <li><a href="{% url 'integration-list' %}">Integrations</a></li>
                         <li><a href="{% url 'job-list' %}">Jobs</a></li>
-                        {% if AUTH_ENABLED %}
                         <li><a href="{% url 'user-list' %}">Users</a></li>
                         <li>
                             <form method="post" action="{% url 'logout' %}">
@@ -55,7 +54,6 @@
                                 <button type="submit" class="cursor-pointer">Log Out</button>
                             </form>
                         </li>
-                        {% endif %}
                     </ul>
                 </div>
                 {% endblock %}

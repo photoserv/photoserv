@@ -1,8 +1,8 @@
 from django.dispatch import receiver
 from django.db import transaction
-from core.signals import photo_published, photo_unpublished
+from media.signals import photo_published, photo_unpublished
 from django.db.models.signals import post_save, post_delete
-from core.models import Photo, PhotoMetadata, PhotoSize, Size, Album, PhotoInAlbum, Tag, PhotoTag
+from media.models import Photo, PhotoMetadata, PhotoSize, Size, Album, PhotoInAlbum, Tag, PhotoTag
 from integration.tasks import call_queue_global_integrations, call_plugin_signal
 from public_rest_api.serializers import PhotoSerializer
 from .models import PluginEntityParameters

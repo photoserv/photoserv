@@ -7,7 +7,7 @@ from .models import (
     PythonPlugin, PhotoPluginExclusion, PluginEntityParameters
 )
 from .forms import IntegrationPhotoForm
-from core.models import Photo
+from media.models import Photo
 from photoserv_plugin.base import PhotoservPlugin
 import uuid
 import tempfile

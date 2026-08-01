@@ -12,5 +12,5 @@ mozilla-django-oidc==5.0.2
 psycopg2-binary ==2.9.12
 gunicorn==26.0.0
 django-celery-results==2.6.0
-drf-spectacular==0.29.0
+drf-spectacular==0.30.0
 django-filter==25.2

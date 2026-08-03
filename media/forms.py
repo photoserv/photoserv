@@ -243,3 +243,10 @@ class TagForm(forms.ModelForm):
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Enter tag name"})
         }
+
+
+class ChannelForm(forms.ModelForm):
+
+    class Meta:
+        model = Channel
+        fields = ["name", "description", "include_new_photos"]

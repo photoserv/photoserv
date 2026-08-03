@@ -27,4 +27,10 @@ urlpatterns = [
     path("tags/<int:pk>/edit/", TagUpdateView.as_view(), name="tag-edit"),
     path("tags/<int:pk>/delete/", TagDeleteView.as_view(), name="tag-delete"),
     path("tags/<int:pk>/", TagDetailView.as_view(), name="tag-detail"),
+
+    path("channels/", ChannelListView.as_view(), name="channel-list"),
+    path("channels/new/", ChannelCreateView.as_view(), name="channel-create"),
+    path("channels/<int:pk>/edit/", ChannelUpdateView.as_view(), name="channel-edit"),
+    path("channels/<int:pk>/delete/", ChannelDeleteView.as_view(), name="channel-delete"),
+    path("channels/<int:pk>/", ChannelDetailView.as_view(), name="channel-detail"),
 ]

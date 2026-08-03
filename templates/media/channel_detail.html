@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% load render_table from django_tables2 %}
+
+{% block title %}
+Channel: {{ object }}
+{% endblock %}
+
+{% block content %}
+<h2 class="text-3xl inline-flex gap-2">
+    <span class="font-extralight">
+        {% include "partials/back_button.html" %}
+        Channel:
+    </span>
+    {{ object }}
+</h2>
+
+<div class="box">
+    <div class="overflow-x-scroll">
+        <table class="table table-zebra table-auto">
+            <colgroup>
+                <col class="w-min whitespace-nowrap" />
+                <col class="w-full" />
+            </colgroup>
+            <tr>
+                <th>Name</th>
+                <td>{{ object.name }}{% if object.builtin %}&nbsp;&nbsp;<span class="badge badge-info">Built-In</span>{%endif%}</td>
+            </tr>
+            <tr>
+                <th>Description</th>
+                <td>{{ object.description }}</td>
+            </tr>
+            <tr>
+                <th>Include New Photos by Default?</th>
+                <td>{{ object.include_new_photos | yesno }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div>
+    <h3 class="text-2xl">Photos</h3>
+    <div class="overflow-x-scroll">
+        {% render_table table %}
+    </div>
+</div>
+
+<div>
+    {% include "partials/model_view_modify_buttons.html" %}
+</div>
+
+{% endblock %}

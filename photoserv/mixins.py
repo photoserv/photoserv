@@ -5,6 +5,7 @@ class CRUDGenericMixin:
     no_object_detail_page = False
     can_directly_create = True
     can_edit = True
+    can_delete = True
     edit_disclaimer = None
 
     def get_model(self):
@@ -32,5 +33,6 @@ class CRUDGenericMixin:
             "can_directly_create": self.can_directly_create,
             "can_edit": self.can_edit,
             "edit_disclaimer": self.edit_disclaimer,
+            "can_delete": self.can_delete,
         })
         return context

@@ -15,8 +15,7 @@ class PhotoTable(tables.Table):
         "td": {"class": "hidden md:table-cell"},
         "th": {"class": "hidden md:table-cell"}
     })
-    publish_date = tables.Column()
-    published = tables.BooleanColumn()
+    canonical_publish_date = tables.Column()
 
     def render_description(self, value):
         # Limit to 240 characters and add ellipsis if longer
@@ -26,8 +25,8 @@ class PhotoTable(tables.Table):
 
     class Meta:
         model = Photo
-        fields = ("id", "thumbnail", "title", "description", "publish_date", "published")
-        order_by = ("-publish_date",)
+        fields = ("id", "thumbnail", "title", "description", "canonical_publish_date", "published")
+        order_by = ("-canonical_publish_date",)
 
 
 class SizeTable(tables.Table):
@@ -79,3 +78,36 @@ class TagTable(tables.Table):
         model = Tag
         fields = ("name", "photo_count", "uuid")
         order_by = ("name",)
+
+
+class ChannelTable(tables.Table):
+    name = tables.Column(linkify=True)
+    description = tables.Column()
+    include_new_photos = tables.BooleanColumn(verbose_name="Include new Photos by Default")
+    builtin = tables.BooleanColumn(verbose_name="Built-in Channel")
+
+    class Meta:
+        model = Channel
+        fields = ("name", "description")
+        order_by = ("-builtin", "name")
+
+
+class ChannelPhotoTable(tables.Table):
+    thumbnail = tables.TemplateColumn(
+        template_name="media/partials/photo_small_thumbnail.html",
+        verbose_name="Thumbnail",
+        orderable=False,
+        accessor="photo__thumbnail"
+    )
+    photo_title = tables.Column(
+        accessor="photo__title",
+        verbose_name="Title",
+        linkify=("photo-detail", {"pk": tables.A("photo__pk")}),
+    )
+    publish_date = tables.Column()
+    published = tables.BooleanColumn()
+
+    class Meta:
+        model = ChannelPhoto
+        fields = ("thumbnail", "photo_title", "publish_date", "published")
+        order_by = ("-publish_date",)

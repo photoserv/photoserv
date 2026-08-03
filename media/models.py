@@ -82,26 +82,6 @@ class Photo(PublicEntity):
     def calculate_slug(self) -> str:
         slug = f"{timezone.now().strftime('%Y-%m-%d')}-{slugify(self.title)}"
         return slug[:self._meta.get_field('slug').max_length]
-    
-    # def calculate_published(self) -> bool:
-    #     return not self.hidden and bool(self.publish_date and self.publish_date <= timezone.now())
-    
-    # def update_published(self, update_model: bool = False, dispatch_signals: bool = False) -> bool:
-    #     old = self._published
-    #     new = self.calculate_published()
-    #     changed = new != old
-    #     self._published = new
-
-    #     if changed and dispatch_signals:
-    #         if new:
-    #             photo_published.send(Photo, instance=self, uuid=self.uuid)
-    #         else:
-    #             photo_unpublished.send(Photo, instance=self, uuid=self.uuid)
-        
-    #     if changed and update_model:
-    #         self.save()
-
-    #     return changed
 
     def get_absolute_url(self):
         return reverse("photo-detail", kwargs={"pk": self.pk})
@@ -479,13 +459,16 @@ class Channel(models.Model):
     def __str__(self):
         return self.name
     
-    def save(self, *args, **kwargs):
+    def get_absolute_url(self):
+        return reverse("channel-detail", kwargs={"pk": self.pk})
+    
+    def clean(self, *args, **kwargs):
         if self.builtin and self.pk:
             existing = Channel.objects.get(pk=self.pk)
-            if existing.name != self.name or self.description != self.description:
+            if existing.name != self.name or existing.description != self.description:
                 raise ValidationError("Cannot relabel the default channel.")
 
-        return super().save(*args, **kwargs)
+        return super().clean(*args, **kwargs)
 
 
     def delete(self, *args, **kwargs):

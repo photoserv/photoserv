@@ -4,6 +4,7 @@ from django.views import View
 from django.views.generic import DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django_tables2.views import SingleTableView
 from django_filters.views import FilterView
+from django_tables2 import SingleTableMixin
 from django.db.models import Count
 from .models import *
 from .forms import *
@@ -432,5 +433,54 @@ class TagDeleteView(TagMixin, DeleteView):
 
     def get_success_url(self):
         return reverse('tag-list')
+
+#endregion
+
+#region Channels
+
+class ChannelListView(CRUDGenericMixin, SingleTableView):
+    model = Channel
+    template_name = "generic_crud_list.html"
+    table_class = ChannelTable
+
+
+class ChannelCreateView(CRUDGenericMixin, CreateView):
+    model = Channel
+    form_class = ChannelForm
+    template_name = "generic_crud_form.html"
+
+    def get_success_url(self):
+        return reverse('channel-list')
+
+
+class ChannelUpdateView(CRUDGenericMixin, UpdateView):
+    model = Channel
+    form_class = ChannelForm
+    template_name = "generic_crud_form.html"
+
+    def get_success_url(self):
+        return reverse('channel-list')
+
+
+class ChannelDeleteView(CRUDGenericMixin, DeleteView):
+    model = Channel
+    template_name = 'confirm_delete_generic.html'
+
+    def get_success_url(self):
+        return reverse('channel-list')
+
+
+class ChannelDetailView(CRUDGenericMixin, SingleTableMixin, DetailView):
+    model = Channel
+    table_class = ChannelPhotoTable
+
+    def get_table_data(self):
+        # Provide the queryset directly to django-tables2
+        return self.object.photos.all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['can_delete'] = not self.object.builtin
+        return context
 
 #endregion

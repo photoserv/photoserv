@@ -3,5 +3,7 @@
     {% if can_edit != False %}
         <a href="./edit" class="btn btn-primary w-full sm:w-auto">Edit</a>
     {% endif %}
-    <a href="./delete" class="btn btn-error w-full sm:w-auto">Delete</a>
+    {% if can_delete != False %}
+        <a href="./delete" class="btn btn-error w-full sm:w-auto">Delete</a>
+    {% endif %}
 </div>

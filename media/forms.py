@@ -51,10 +51,10 @@ class PhotoForm(forms.ModelForm, FormWithCustomAttributesFieldMixin):
         required=False,
         help_text="Leave blank to auto calculate"
     )
-    hidden = forms.BooleanField(required=False, initial=False, help_text="Hide from public API and/or yank from supported integrations.")
-    publish_date = forms.DateTimeField(
+    canonical_hidden = forms.BooleanField(required=False, initial=False, help_text="Set the default visibility of this photo for publishing channels.")
+    canonical_publish_date = forms.DateTimeField(
         required=False,
-        help_text="Set a specific publish date/time for the photo.",
+        help_text="Set the default publish date/time for the photo.",
         widget=forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
         input_formats=["%Y-%m-%dT%H:%M"],
     )
@@ -82,18 +82,13 @@ class PhotoForm(forms.ModelForm, FormWithCustomAttributesFieldMixin):
                 self.fields['location'].initial = ""
                 self.initial['location'] = ""
 
-            # Disable publish_date field if photo is already published
-            if self.instance.published:
-                self.fields['publish_date'].disabled = True
-                self.fields['publish_date'].help_text = "Cannot change publish date of a published photo."
         else:
             # For new photos, set publish_date to now by default
-            self.fields['publish_date'].initial = timezone.now()
+            self.fields['canonical_publish_date'].initial = timezone.now()
 
     class Meta:
         model = Photo
-        fields = ["title", "description", "raw_image", "slug", "hidden", "hide_location", "publish_date", "custom_attributes", "albums"]
-        exclude = ["last_updated"]
+        fields = ["title", "description", "raw_image", "slug", "canonical_hidden", "hide_location", "canonical_publish_date", "custom_attributes", "albums"]
     
     def save(self, commit=True, integration_photo_form=None):
         """
@@ -175,7 +170,7 @@ class CondensedPhotoForm(PhotoForm):
     )
 
     class Meta(PhotoForm.Meta):
-        fields = ["title", "description", "raw_image", "hidden", "publish_date", "albums"]
+        fields = ["title", "description", "raw_image", "canonical_hidden", "canonical_publish_date", "albums"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

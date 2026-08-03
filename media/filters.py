@@ -41,9 +41,9 @@ class PhotoFilter(django_filters.FilterSet):
     )
     
     # Publish date filters
-    publish_date = django_filters.DateFromToRangeFilter(
-        field_name='publish_date',
-        label='Publish date',
+    canonical_publish_date = django_filters.DateFromToRangeFilter(
+        field_name='canonical_publish_date',
+        label='Canonical Publish date',
         widget=CrispyDateRangeWidget()
     )
     

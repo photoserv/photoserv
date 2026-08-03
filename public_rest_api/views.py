@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from media.models import Photo, Size
+from media.models import Photo, Size, Channel
 from .filters import PhotoFilterAPI
 from .serializers import *
 from django.http import FileResponse, Http404
@@ -29,7 +29,6 @@ class SizeViewSet(viewsets.ReadOnlyModelViewSet):
 
 class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = 'uuid'
-    queryset = Photo.objects.filter(_published=True)
     filterset_class = PhotoFilterAPI
 
     def get_serializer_class(self):
@@ -41,7 +40,7 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Filter photos by location bounds and other filters using PhotoFilterAPI.
         """
-        queryset = super().get_queryset()
+        queryset = Photo.query.published()
         queryset = queryset.select_related('metadata').prefetch_related('albums', 'tags')
         
         # Get location bound parameters
@@ -194,8 +193,10 @@ class PhotoViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class PhotoImageAPIView(GenericAPIView):
-    queryset = Photo.objects.filter(_published=True)
     lookup_field = "uuid"
+
+    def get_queryset(self):
+        return Photo.query.published()
 
     def get(self, request, uuid, size, *args, **kwargs):
         photo = self.get_object()  # GenericAPIView uses queryset + lookup_field

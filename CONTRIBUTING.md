@@ -7,8 +7,9 @@
 * Rename 'core' to 'media'
 * Newer API schema
     * Session Auth supported
-    * Read/write endpoints for resources
+    * Read/write endpoints for resources (admin api)
     * Write requires permission on API key
+    * Public API moved to `/public/`
 * Authentication is now enforced; no anonymous mode.
 
 # 1.0 Change List (TODO):

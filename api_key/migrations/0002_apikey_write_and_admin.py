@@ -19,4 +19,9 @@ class Migration(migrations.Migration):
             name='write_access',
             field=models.BooleanField(default=False),
         ),
+        migrations.AddField(
+            model_name='apikey',
+            name='admin_access',
+            field=models.BooleanField(default=False, help_text='Grants access to the Admin API'),
+        ),
     ]

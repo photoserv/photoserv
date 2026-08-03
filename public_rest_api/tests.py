@@ -34,7 +34,9 @@ class APISerializerTestCase(TestCase):
             title="Test Photo",
             raw_image=create_test_image_file(),
         )
-        self.photo.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
 
         # Attach a PhotoSize for the original size
         self.photo_size = PhotoSize.objects.create(
@@ -107,9 +109,11 @@ class APISerializerTestCase(TestCase):
         photo2 = Photo.objects.create(
             title="Earlier Photo",
             raw_image=create_test_image_file("earlier.jpg"),
-            publish_date=timezone.now() - timedelta(days=5),
+            canonical_publish_date=timezone.now() - timedelta(days=5),
         )
-        photo2.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=photo2,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         photo2.assign_albums([self.album1])
 
         url = f"/api/albums/{self.album1.uuid}/"
@@ -122,7 +126,7 @@ class APISerializerTestCase(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         photo_uuids = [p['uuid'] for p in response.json()['photos']]
-        # photo2 has earlier publish_date so should appear first
+        # photo2 has earlier canonical_publish_date so should appear first
         self.assertEqual(photo_uuids.index(str(photo2.uuid)), 0)
         self.assertEqual(photo_uuids.index(str(self.photo.uuid)), 1)
 
@@ -179,14 +183,18 @@ class APISerializerTestCase(TestCase):
             title="Parent Photo",
             raw_image=create_test_image_file("parent.jpg"),
         )
-        parent_photo.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=parent_photo,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         parent_photo.assign_albums([parent_album])
 
         child_photo = Photo.objects.create(
             title="Child Photo",
             raw_image=create_test_image_file("child.jpg"),
         )
-        child_photo.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=child_photo,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         child_photo.assign_albums([child_album])
 
         url = f"/api/albums/{parent_album.uuid}/"
@@ -321,8 +329,9 @@ class APISerializerTestCase(TestCase):
     # --- Test hidden photos are excluded from public API ---
     def test_hidden_photos_excluded_from_public_api(self):
         # Hide the photo
-        self.photo.hidden = True
-        self.photo.update_published(update_model=True)
+        channel_photo, created = ChannelPhoto.objects.get_or_create(photo=self.photo,channel=Channel.get_default_channel())
+        channel_photo.published = False
+        channel_photo.save()
 
         # Check photo list does not include hidden photo
         response = self.client.get("/api/photos/")
@@ -351,17 +360,30 @@ class APISerializerTestCase(TestCase):
         future_photo = Photo.objects.create(
             title="Future Photo",
             raw_image=create_test_image_file("future.jpg"),
-            hidden=False,
-            publish_date=timezone.now() + timedelta(hours=1)
+            canonical_hidden=False,
+            canonical_publish_date=timezone.now() + timedelta(hours=24)
         )
-        future_photo.update_published(update_model=True)
+        channel_photo = Channel.get_default_channel().add_photo(future_photo)
+        channel_photo.update_published()
+        channel_photo.save()
         
-        # Add a photo size for the future photo
-        future_photo_size = PhotoSize.objects.create(
-            photo=future_photo,
-            size=public_test_size,
-            image=create_test_image_file("future_original.jpg")
-        )
+        # Add a photo size and metadata for the future photo
+        # future_photo_size = PhotoSize.objects.create(
+        #     photo=future_photo,
+        #     size=public_test_size,
+        #     image=
+        # )
+
+        # Add metadata
+        PhotoMetadata.objects.create(photo=future_photo, camera_make="Canon")
+
+        # Add all sizes
+        for size in Size.objects.all():
+            PhotoSize.objects.create(
+                photo=future_photo,
+                size=size,
+                image=create_test_image_file("future_original.jpg")
+            )
         
         # Add it to an album and give it a tag
         future_photo.assign_albums([self.album1])
@@ -402,8 +424,9 @@ class APISerializerTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         
         # Now set the publish date to the past
-        future_photo.publish_date = timezone.now() - timedelta(hours=1)
-        future_photo.update_published(update_model=True)
+        channel_photo.publish_date = timezone.now() - timedelta(hours=1)
+        channel_photo.update_published()
+        channel_photo.save()
         
         # Assert it DOES show up in all endpoints
         
@@ -489,7 +512,9 @@ class APISizeDetailTestCase(TestCase):
             title="Test Photo for Sizes",
             raw_image=create_test_image_file()
         )
-        self.photo.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
 
         # Original size for photo attachment
         self.size_original = Size.objects.get(slug="original")
@@ -636,7 +661,9 @@ class TestIncludePhotoSummarySizes(TestCase):
 
         # --- Create a Photo ---
         self.photo = Photo.objects.create(title="Test Photo", raw_image="test.jpg")
-        self.photo.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
 
         # --- Create Sizes ---
         self.public_size = Size.objects.create(slug="public_size", public=True, max_dimension=500)
@@ -733,7 +760,9 @@ class PhotoLocationQueryTestCase(TestCase):
             longitude=-74.0060,
             hide_location=False
         )
-        self.photo_nyc.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo_nyc,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         
         # Photo 2: Los Angeles (34.0522, -118.2437)
         self.photo_la = Photo.objects.create(
@@ -743,7 +772,9 @@ class PhotoLocationQueryTestCase(TestCase):
             longitude=-118.2437,
             hide_location=False
         )
-        self.photo_la.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo_la,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         
         # Photo 3: London (51.5074, -0.1278)
         self.photo_london = Photo.objects.create(
@@ -753,7 +784,9 @@ class PhotoLocationQueryTestCase(TestCase):
             longitude=-0.1278,
             hide_location=False
         )
-        self.photo_london.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo_london,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         
         # Photo 4: Tokyo (35.6762, 139.6503)
         self.photo_tokyo = Photo.objects.create(
@@ -763,7 +796,9 @@ class PhotoLocationQueryTestCase(TestCase):
             longitude=139.6503,
             hide_location=False
         )
-        self.photo_tokyo.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo_tokyo,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         
         # Photo 5: Hidden location (should never appear in filtered results)
         self.photo_hidden = Photo.objects.create(
@@ -773,7 +808,9 @@ class PhotoLocationQueryTestCase(TestCase):
             longitude=-75.0,
             hide_location=True
         )
-        self.photo_hidden.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo_hidden,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         
         # Photo 6: No location (should never appear in filtered results)
         self.photo_no_location = Photo.objects.create(
@@ -783,7 +820,9 @@ class PhotoLocationQueryTestCase(TestCase):
             longitude=None,
             hide_location=False
         )
-        self.photo_no_location.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo_no_location,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
     
     def test_no_filters_returns_all_photos(self):
         """Without any filters, all published photos should be returned."""
@@ -992,7 +1031,9 @@ class PhotoFilterTests(TestCase):
             title="Sunset in Nature",
             raw_image=create_test_image_file("photo1.jpg")
         )
-        self.photo1.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo1,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         PhotoMetadata.objects.create(
             photo=self.photo1,
             camera_make="Canon",
@@ -1007,7 +1048,9 @@ class PhotoFilterTests(TestCase):
             title="City Lights",
             raw_image=create_test_image_file("photo2.jpg")
         )
-        self.photo2.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo1,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         PhotoMetadata.objects.create(
             photo=self.photo2,
             camera_make="Nikon",
@@ -1022,7 +1065,9 @@ class PhotoFilterTests(TestCase):
             title="Street Portrait",
             raw_image=create_test_image_file("photo3.jpg")
         )
-        self.photo3.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo1,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         PhotoMetadata.objects.create(
             photo=self.photo3,
             camera_make="Sony",
@@ -1038,7 +1083,9 @@ class PhotoFilterTests(TestCase):
             title="Forest Scene",
             raw_image=create_test_image_file("photo4.jpg")
         )
-        self.photo4.update_published(update_model=True)
+        channel_photo = ChannelPhoto.objects.create(photo=self.photo1,channel=Channel.get_default_channel())
+        channel_photo.published = True
+        channel_photo.save()
         PhotoMetadata.objects.create(
             photo=self.photo4,
             camera_make="Canon",

@@ -1,7 +1,8 @@
-from media.models import Photo, Size, Album, Tag, PhotoMetadata, PhotoTag, PhotoSize
+from media.models import *
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from drf_spectacular.utils import extend_schema_field
+from django.db.models import Q
 
 
 class PhotoSizeSerializer(serializers.ModelSerializer):
@@ -50,7 +51,7 @@ class PhotoSummarySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Photo
-        fields = ["uuid", "title", "slug", "publish_date", "sizes"]
+        fields = ["uuid", "title", "slug", "canonical_publish_date", "sizes"]
 
 
 class AlbumSerializer(serializers.ModelSerializer):
@@ -89,7 +90,7 @@ class AlbumSerializer(serializers.ModelSerializer):
             recursive = request.query_params.get("recursive", "").lower() == "true"
 
         return PhotoSummarySerializer(
-            obj.get_ordered_photos(public_only=True, sort_method=sort_method, sort_descending=sort_descending, recursive=recursive),
+            obj.get_ordered_photos(q_filter=Q(channels__channel__builtin=True, channels__published=True), sort_method=sort_method, sort_descending=sort_descending, recursive=recursive),
             many=True,
             context=self.context
         ).data
@@ -114,7 +115,7 @@ class TagSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(PhotoSummarySerializer(many=True))
     def get_photos(self, obj):
-        return PhotoSummarySerializer(obj.photos.filter(_published=True), many=True, context=self.context).data
+        return PhotoSummarySerializer(Photo.query.published(), many=True, context=self.context).data
 
 
 class LocationSerializer(serializers.Serializer):
@@ -148,7 +149,7 @@ class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Photo
         fields = [
-            "uuid", "title", "slug", "description", "custom_attributes", "publish_date", "albums", "tags", "metadata", "sizes", "location", "created_at", "updated_at"
+            "uuid", "title", "slug", "description", "custom_attributes", "canonical_publish_date", "albums", "tags", "metadata", "sizes", "location", "created_at", "updated_at"
         ]
 
 

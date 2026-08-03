@@ -14,6 +14,7 @@ class APIKey(models.Model):
     name = models.CharField(max_length=128, unique=True)
     hash = models.CharField(max_length=128, unique=True)
     is_active = models.BooleanField(default=True)
+    admin_access = models.BooleanField(default=False, help_text="Grants access to the Admin API")
     write_access = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_on = models.DateTimeField(default=default_expiration)

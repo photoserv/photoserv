@@ -7,7 +7,8 @@ from . import CONTENT_RAW_PHOTOS_PATH, CONTENT_RESIZED_PHOTOS_PATH
 from . import tasks
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .signals import photo_published, photo_unpublished
+from .signals import *
+from django.db.models import Q
 
 
 class PublicEntity(models.Model):
@@ -15,16 +16,23 @@ class PublicEntity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        # auto_now=True already handles updated_at automatically on each save
-        # No need to manually update and save again
-        super().save(*args, **kwargs)
-
     class Meta:
         abstract = True
 
 
+class PhotoQuerySet(models.QuerySet):
+    def published(self, channel=None):
+        channel = channel or Channel.get_default_channel()
+        return self.filter(
+            channels__channel=channel,
+            channels__published=True,
+        ).distinct()
+
+
 class Photo(PublicEntity):
+    objects = models.Manager()
+    query = PhotoQuerySet.as_manager()
+
     def get_image_file_path(instance, filename):
         ext = os.path.splitext(filename)[1]
         random_str = uuid.uuid4().hex[:8]
@@ -36,13 +44,12 @@ class Photo(PublicEntity):
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(max_length=4096, default="", blank=True)
     raw_image = models.ImageField(upload_to=get_image_file_path)
-    publish_date = models.DateTimeField(default=timezone.now, blank=True, null=False)
-    hidden = models.BooleanField(default=False, help_text="Hide from public API")
-    _published = models.BooleanField(default=False, db_column="published")
+    canonical_publish_date = models.DateTimeField(default=timezone.now, blank=True, null=False, help_text="Default publish date")
+    canonical_hidden = models.BooleanField(default=False, help_text="Default hidden state")
     custom_attributes = models.JSONField(default=dict, blank=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
-    hide_location = models.BooleanField(default=False, help_text="Hide location data from public API")
+    hide_location = models.BooleanField(default=False, help_text="Hide location data from the public")
 
     tags = models.ManyToManyField(
         "Tag",
@@ -52,37 +59,49 @@ class Photo(PublicEntity):
 
     @property
     def published(self):
-        return self._published
+        return False # TODO: Reimplement
+    
+    @property
+    def has_sizes(self) -> bool:
+        return all(self.sizes.filter(size=size).exists() for size in Size.objects.all())
 
     @property
-    def health(self) -> "PhotoHealth":
-        all_sizes = all(self.sizes.filter(size=size).exists() for size in Size.objects.all())
-        metadata = PhotoMetadata.objects.filter(photo=self).exists()
-        return PhotoHealth(all_sizes=all_sizes, metadata=metadata)
+    def has_metadata(self) -> bool:
+        return PhotoMetadata.objects.filter(photo=self).exists()
+    
+    @property
+    def is_ready(self) -> bool:
+        return self.has_sizes and self.has_metadata
+    
+    def is_published(self, channel: "Channel") -> bool:
+        return self.channels.filter(
+            channel=channel,
+            published=True,
+        ).exists()
 
     def calculate_slug(self) -> str:
         slug = f"{timezone.now().strftime('%Y-%m-%d')}-{slugify(self.title)}"
         return slug[:self._meta.get_field('slug').max_length]
     
-    def calculate_published(self) -> bool:
-        return not self.hidden and bool(self.publish_date and self.publish_date <= timezone.now())
+    # def calculate_published(self) -> bool:
+    #     return not self.hidden and bool(self.publish_date and self.publish_date <= timezone.now())
     
-    def update_published(self, update_model: bool = False, dispatch_signals: bool = False) -> bool:
-        old = self._published
-        new = self.calculate_published()
-        changed = new != old
-        self._published = new
+    # def update_published(self, update_model: bool = False, dispatch_signals: bool = False) -> bool:
+    #     old = self._published
+    #     new = self.calculate_published()
+    #     changed = new != old
+    #     self._published = new
 
-        if changed and dispatch_signals:
-            if new:
-                photo_published.send(Photo, instance=self, uuid=self.uuid)
-            else:
-                photo_unpublished.send(Photo, instance=self, uuid=self.uuid)
+    #     if changed and dispatch_signals:
+    #         if new:
+    #             photo_published.send(Photo, instance=self, uuid=self.uuid)
+    #         else:
+    #             photo_unpublished.send(Photo, instance=self, uuid=self.uuid)
         
-        if changed and update_model:
-            self.save()
+    #     if changed and update_model:
+    #         self.save()
 
-        return changed
+    #     return changed
 
     def get_absolute_url(self):
         return reverse("photo-detail", kwargs={"pk": self.pk})
@@ -125,7 +144,7 @@ class Photo(PublicEntity):
 
         if not is_new:
             # Recalculate published status on updates
-            self.update_published(dispatch_signals=True)
+            # self.update_published(dispatch_signals=True)
 
             # If the lat/long is null, fetch from metadata if available
             if not (not is_new and image_replaced) and (self.latitude is None or self.longitude is None) and hasattr(self, "metadata"):
@@ -164,19 +183,14 @@ class Photo(PublicEntity):
         if size_files:
             tasks.delete_files.delay_on_commit(size_files)
 
-        if self._published:
-            photo_unpublished.send(Photo, instance=self, uuid=self.uuid)
+        # Unpublish
+        for channel in self.channels.all():
+            channel.delete()
 
         super().delete(*args, **kwargs)
 
     def __str__(self):
         return self.title
-
-
-class PhotoHealth:
-    def __init__(self, all_sizes: bool, metadata: bool):
-        self.all_sizes = all_sizes
-        self.metadata = metadata
 
 
 class PhotoMetadata(PublicEntity):
@@ -295,8 +309,8 @@ class Album(PublicEntity):
     parent = models.ForeignKey("Album", on_delete=models.SET_NULL, null=True, blank=True, related_name="children")
     custom_attributes = models.JSONField(default=dict, blank=True)
 
-    def get_ordered_photos(self, public_only: bool = False, recursive: bool = False, sort_method: AlbumSortMethod = None, sort_descending: bool = None):
-        qs = self._photos.all()
+    def get_ordered_photos(self, q_filter = Q(), recursive: bool = False, sort_method: AlbumSortMethod = None, sort_descending: bool = None):
+        qs = self._photos.all().filter(q_filter)
 
         sort_method = sort_method if sort_method is not None else self.sort_method
         sort_descending = self.sort_descending if sort_descending is None else sort_descending
@@ -316,16 +330,13 @@ class Album(PublicEntity):
 
             qs = Photo.objects.filter(albums__in=album_pks).distinct()
 
-        if public_only:
-            qs = qs.filter(_published=True)
-
         if sort_method == self.AlbumSortMethod.MANUAL:
             # Do not apply ascending/descending for manual sort
             return qs.order_by("photoinalbum__order")
         elif sort_method == self.AlbumSortMethod.CREATED:
             order_by = "metadata__capture_date"
         elif sort_method == self.AlbumSortMethod.PUBLISHED:
-            order_by = "publish_date"
+            order_by = "canonical_publish_date"
         elif sort_method == self.AlbumSortMethod.RANDOM:
             return qs.order_by("?")  # random order, no need for sort_descending
         else:
@@ -392,7 +403,7 @@ class Size(PublicEntity):
     square_crop = models.BooleanField(default=False)
     builtin = models.BooleanField(default=False)
     can_edit = models.BooleanField(default=True)
-    public = models.BooleanField(default=True, help_text="Allow in the public API?")
+    public = models.BooleanField(default=True, help_text="Allow public use?")
 
     def clean(self):
         # Prevent modifications to builtin sizes
@@ -457,3 +468,82 @@ class PhotoSize(models.Model):
 
     def __str__(self):
         return f"{self.photo.title} - {self.size.slug}"
+
+
+class Channel(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(max_length=255, blank=True, default="")
+    include_new_photos = models.BooleanField(default=True, help_text="Include new photos by default")
+    builtin = models.BooleanField(default=False, help_text="Cannot delete or modify this channel")
+
+    def __str__(self):
+        return self.name
+    
+    def save(self, *args, **kwargs):
+        if self.builtin and self.pk:
+            existing = Channel.objects.get(pk=self.pk)
+            if existing.name != self.name or self.description != self.description:
+                raise ValidationError("Cannot relabel the default channel.")
+
+        return super().save(*args, **kwargs)
+
+
+    def delete(self, *args, **kwargs):
+        if self.builtin:
+            raise ValidationError("Cannot delete the default channel.")
+        
+        for photo in self.photos.all():
+            photo.delete()
+        
+        super().delete(*args, **kwargs)
+    
+    def add_photo(self, photo: Photo, publish_date = None) -> ChannelPhoto:
+        if publish_date == None:
+            publish_date = photo.canonical_publish_date
+        
+        return ChannelPhoto.objects.create(
+            channel = self,
+            photo = photo,
+            publish_date = publish_date
+        )
+    
+    @classmethod
+    def get_default_channel(cls) -> Channel:
+        return Channel.objects.filter(builtin=True).first()
+
+
+class ChannelPhoto(models.Model):
+    channel = models.ForeignKey(Channel, models.CASCADE, related_name="photos")
+    photo = models.ForeignKey(Photo, models.CASCADE, related_name="channels")
+    publish_date = models.DateTimeField(default=timezone.now, blank=True, null=False, help_text="Publish date")
+    published = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.channel.name}: {self.photo.title}"
+
+    @property
+    def new_publish_state(self) -> bool:
+        business: bool = self.publish_date <= timezone.now()
+        if business and self.published:
+            return True
+        return business and self.photo.is_ready
+
+    def update_published(self, dispatch_signals: bool = True):
+        change = False
+        new = self.new_publish_state
+        if new != self.published:
+            change = True
+        self.published = new
+
+        if dispatch_signals:
+            if new:
+                channel_photo_published.send(Photo, instance=self, uuid=None) # TODO: Fix UUID
+            else:
+                channel_photo_unpublished.send(Photo, instance=self, uuid=None) # TODO: Fix UUID
+        
+        return change
+
+    def delete(self, *args, **kwargs):
+        channel_photo_unpublished.send(Photo, instance=self, uuid=None) # TODO: Fix UUID
+
+        return super().delete(*args, **kwargs)

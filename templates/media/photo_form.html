@@ -9,7 +9,7 @@ Editing {{ object|default:object_type_name }}
 
 {% block content %}
 
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data"{% if object is None %} x-data="{ canonicalPublishDate: '{% if form.is_bound %}{{ form.data.canonical_publish_date|escapejs }}{% else %}{{ form.canonical_publish_date.value|date:'Y-m-d\\TH:i' }}{% endif %}' }" x-init="$watch('canonicalPublishDate', value => document.querySelectorAll('[data-channel-publish-date]').forEach(input => input.value = value))"{% endif %}>
     {% csrf_token %}
 
     <div class="grid grid-cols-1 gap-4">
@@ -51,6 +51,11 @@ Editing {{ object|default:object_type_name }}
                 Remove (click) the pin to revert to metadata.
             </p>
         </div>
+
+        {% if photo_channel_form %}
+        <hr class="my-2" />
+        {% include 'media/photo_channel_form.html' %}
+        {% endif %}
 
         {% if integration_photo_form %}
 

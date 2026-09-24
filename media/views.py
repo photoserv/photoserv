@@ -77,6 +77,14 @@ class PhotoCreateView(CRUDGenericMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        if 'photo_channel_form' not in context:
+            context['photo_channel_form'] = PhotoChannelForm(
+                self.request.POST if self.request.method == 'POST' else None,
+                canonical_publish_date=(
+                    context['form'].initial.get('canonical_publish_date')
+                    or context['form'].fields['canonical_publish_date'].initial
+                ),
+            )
         # Add exclusion form to context
         try:
             from integration.forms import IntegrationPhotoForm
@@ -90,6 +98,14 @@ class PhotoCreateView(CRUDGenericMixin, CreateView):
         return context
 
     def form_valid(self, form):
+        photo_channel_form = PhotoChannelForm(
+            self.request.POST,
+            canonical_publish_date=form.cleaned_data.get('canonical_publish_date'),
+        )
+        if not photo_channel_form.is_valid():
+            context = self.get_context_data(form=form)
+            context['photo_channel_form'] = photo_channel_form
+            return self.render_to_response(context)
         # Get exclusion form
         integration_photo_form = None
         try:
@@ -108,6 +124,7 @@ class PhotoCreateView(CRUDGenericMixin, CreateView):
         
         # Save with exclusion form
         self.object = form.save(commit=True, integration_photo_form=integration_photo_form)
+        photo_channel_form.save(self.object)
         return redirect(self.get_success_url())
 
     def get_success_url(self):
@@ -223,6 +240,11 @@ class PhotoUpdateView(CRUDGenericMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        if 'photo_channel_form' not in context:
+            context['photo_channel_form'] = PhotoChannelForm(
+                self.request.POST if self.request.method == 'POST' else None,
+                photo_instance=self.object,
+            )
         # Add exclusion form to context
         try:
             from integration.forms import IntegrationPhotoForm
@@ -236,6 +258,11 @@ class PhotoUpdateView(CRUDGenericMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        photo_channel_form = PhotoChannelForm(self.request.POST, photo_instance=self.object)
+        if not photo_channel_form.is_valid():
+            context = self.get_context_data(form=form)
+            context['photo_channel_form'] = photo_channel_form
+            return self.render_to_response(context)
         # Get exclusion form
         integration_photo_form = None
         try:
@@ -254,6 +281,7 @@ class PhotoUpdateView(CRUDGenericMixin, UpdateView):
         
         # Save with exclusion form
         self.object = form.save(commit=True, integration_photo_form=integration_photo_form)
+        photo_channel_form.save(self.object)
         return redirect(self.get_success_url())
 
     def get_success_url(self):

@@ -85,6 +85,7 @@ class PhotoForm(forms.ModelForm, FormWithCustomAttributesFieldMixin):
         else:
             # For new photos, set publish_date to now by default
             self.fields['canonical_publish_date'].initial = timezone.now()
+            self.fields['canonical_publish_date'].widget.attrs['x-model'] = 'canonicalPublishDate'
 
     class Meta:
         model = Photo
@@ -161,6 +162,93 @@ class PhotoForm(forms.ModelForm, FormWithCustomAttributesFieldMixin):
 
 
         return photo
+
+
+class PhotoChannelForm(forms.Form):
+    """Configure the channels a photo should be published to."""
+
+    def __init__(self, *args, photo_instance=None, canonical_publish_date=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.photo_instance = photo_instance
+        self.channels = list(Channel.objects.all().order_by('name'))
+        existing = {}
+        if photo_instance and photo_instance.pk:
+            existing = {
+                channel_photo.channel_id: channel_photo
+                for channel_photo in ChannelPhoto.objects.filter(photo=photo_instance)
+            }
+
+        default_date = canonical_publish_date or getattr(
+            photo_instance, 'canonical_publish_date', None
+        ) or timezone.now()
+        self.channel_rows = []
+        for channel in self.channels:
+            channel_photo = existing.get(channel.pk)
+            publish_name = self.publish_field_name(channel)
+            date_name = self.date_field_name(channel)
+            self.fields[publish_name] = forms.BooleanField(
+                required=False,
+                label='',
+                initial=(
+                    bool(channel_photo)
+                    if photo_instance and photo_instance.pk
+                    else channel.include_new_photos
+                ),
+                widget=forms.CheckboxInput(attrs={'data-channel-publish': ''}),
+            )
+            self.fields[date_name] = forms.DateTimeField(
+                required=False,
+                label='',
+                initial=channel_photo.publish_date if channel_photo else default_date,
+                widget=forms.DateTimeInput(
+                    attrs={'type': 'datetime-local', 'data-channel-publish-date': ''},
+                    format='%Y-%m-%dT%H:%M',
+                ),
+                input_formats=['%Y-%m-%dT%H:%M'],
+            )
+            self.channel_rows.append((channel, self[publish_name], self[date_name]))
+
+    @staticmethod
+    def publish_field_name(channel):
+        return f'channel_{channel.pk}_publish'
+
+    @staticmethod
+    def date_field_name(channel):
+        return f'channel_{channel.pk}_publish_date'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        for channel in self.channels:
+            if (
+                cleaned_data.get(self.publish_field_name(channel))
+                and not cleaned_data.get(self.date_field_name(channel))
+            ):
+                self.add_error(
+                    self.date_field_name(channel),
+                    'A publish date is required when publishing to a channel.',
+                )
+        return cleaned_data
+
+    def save(self, photo):
+        """Create, update, or remove each selected channel-photo relationship."""
+        for channel in self.channels:
+            channel_photos = ChannelPhoto.objects.filter(channel=channel, photo=photo)
+            if not self.cleaned_data[self.publish_field_name(channel)]:
+                channel_photos.delete()
+                continue
+
+            publish_date = self.cleaned_data[self.date_field_name(channel)]
+            channel_photo = channel_photos.first()
+            if channel_photo is None:
+                ChannelPhoto.objects.create(
+                    channel=channel,
+                    photo=photo,
+                    publish_date=publish_date,
+                )
+            else:
+                channel_photo.publish_date = publish_date
+                channel_photo.save(update_fields=['publish_date'])
+                channel_photos.exclude(pk=channel_photo.pk).delete()
 
 
 class CondensedPhotoForm(PhotoForm):

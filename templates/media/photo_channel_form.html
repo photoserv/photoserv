@@ -1,0 +1,27 @@
+{% load crispy_forms_tags %}
+
+<div>
+    <h3>Publishing Channels</h3>
+    {{ photo_channel_form.non_field_errors }}
+    <div class="overflow-x-auto py-4">
+        <table class="table">
+            <thead>
+                <tr><th>Channel</th><th>Publish</th><th>Publish date</th></tr>
+            </thead>
+            <tbody>
+                {% for channel, publish_field, date_field in photo_channel_form.channel_rows %}
+                <tr>
+                    <td>{{ channel.name }}</td>
+                    <td>{{ publish_field|as_crispy_field }}</td>
+                    <td>{{ date_field|as_crispy_field }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="bg-base-200">
+                    <td class="italic">Set all</td>
+                    <td><input type="checkbox" class="input checkbox" aria-label="Set all channels" @change="$root.querySelectorAll('[data-channel-publish]').forEach(input => input.checked = $event.target.checked); $event.target.blur()"></td>
+                    <td><input type="datetime-local" class="input date w-full" aria-label="Set all publish dates" @change="$root.querySelectorAll('[data-channel-publish-date]').forEach(input => input.value = $event.target.value)"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

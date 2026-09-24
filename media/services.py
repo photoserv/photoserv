@@ -1,5 +1,4 @@
-from celery import shared_task
-from media.models import *
+from . import models
 from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
@@ -61,7 +60,7 @@ def gen_size(photo, size):
         else:
             img.save(buffer, format='JPEG')
 
-        photo_size = PhotoSize(photo=photo, size=size, height=img.height, width=img.width, md5=hashlib.md5(buffer.getvalue()).hexdigest())
+        photo_size = models.PhotoSize(photo=photo, size=size, height=img.height, width=img.width, md5=hashlib.md5(buffer.getvalue()).hexdigest())
         photo_size.image.save(
             f"{photo.id}_{size.slug}.jpg",
             ContentFile(buffer.getvalue()),
@@ -89,7 +88,7 @@ def parse_numeric(value, cast=float):
         return None
 
 
-def generate_metadata_for_photo(photo: Photo):
+def generate_metadata_for_photo(photo: "models.Photo"):
     photo.raw_image.open()  # ensure file is ready
     temp_file_path = photo.raw_image.path
 
@@ -157,7 +156,7 @@ def generate_metadata_for_photo(photo: Photo):
 
 def publish_photos() -> int:
     chg = 0
-    for channel_photo in ChannelPhoto.objects.all():
+    for channel_photo in models.ChannelPhoto.objects.all():
         if channel_photo.update_published():
             chg += 1
         channel_photo.save()

@@ -1,5 +1,6 @@
 from unittest import mock
 from django.test import TestCase
+from media import services
 from media.models import *
 from datetime import timedelta
 
@@ -58,6 +59,13 @@ class ChannelTests(TestCase):
 
             self.assertTrue(channel_photo.published)
             mock_publish.assert_called_once()
+
+    def test_publish_photos_service_updates_channel_photos(self):
+        with mock.patch.object(ChannelPhoto, "update_published", return_value=True) as update_published:
+            changed = services.publish_photos()
+
+        self.assertEqual(changed, 1)
+        update_published.assert_called_once_with()
     
     def broken_published_photo_not_revoked(self):
         PhotoMetadata.objects.all().delete()

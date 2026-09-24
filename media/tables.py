@@ -16,12 +16,19 @@ class PhotoTable(tables.Table):
         "th": {"class": "hidden md:table-cell"}
     })
     canonical_publish_date = tables.Column()
+    published = tables.Column(orderable=False, empty_values=())
 
     def render_description(self, value):
         # Limit to 240 characters and add ellipsis if longer
         if len(value) > 240:
             return value[:240] + "..."
         return value
+
+    def render_published(self, record):
+        configured_count = record.configured_channel_count
+        if configured_count == 0:
+            return "0"
+        return f"{record.published_channel_count} / {configured_count}"
 
     class Meta:
         model = Photo

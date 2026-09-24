@@ -41,7 +41,7 @@ Photo: {{ object }}
                 </tr>
                 <tr>
                     <th>Publish Date</th>
-                    <td>{{ object.publish_date|date:"Y-m-d H:i" }}</td>
+                    <td>{{ object.canonical_publish_date|date:"Y-m-d H:i" }}</td>
                 </tr>
                 <tr>
                     <th>Capture Date</th>
@@ -66,7 +66,7 @@ Photo: {{ object }}
                 <tr>
                     <th>Hidden</th>
                     <td>
-                        {% if object.hidden %}
+                        {% if object.canonical_hidden %}
                         Yes
                         {% else %}
                         No

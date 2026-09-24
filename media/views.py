@@ -5,7 +5,7 @@ from django.views.generic import DetailView, CreateView, UpdateView, DeleteView,
 from django_tables2.views import SingleTableView
 from django_filters.views import FilterView
 from django_tables2 import SingleTableMixin
-from django.db.models import Count
+from django.db.models import Count, Q
 from .models import *
 from .forms import *
 from .tables import *
@@ -28,7 +28,17 @@ class PhotoListView(CRUDGenericMixin, FilterView, SingleTableView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        return queryset.select_related('metadata').prefetch_related('albums', 'tags')
+        return (
+            queryset.select_related('metadata')
+            .prefetch_related('albums', 'tags')
+            .annotate(
+                configured_channel_count=Count('channels'),
+                published_channel_count=Count(
+                    'channels',
+                    filter=Q(channels__published=True),
+                ),
+            )
+        )
 
 
 class PhotoDetailView(CRUDGenericMixin, DetailView):

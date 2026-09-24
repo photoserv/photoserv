@@ -3,6 +3,8 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 from media.models import *
 from media.filters import PhotoFilter
+from media.tables import PhotoTable
+from media.views import PhotoListView
 
 
 class PhotoModelTests(TestCase):
@@ -62,6 +64,32 @@ class PhotoModelTests(TestCase):
         self.photo.refresh_from_db()
         self.assertTrue(self.photo.has_metadata)
         self.assertTrue(self.photo.has_sizes)
+
+
+class PhotoTableTests(TestCase):
+    def setUp(self):
+        self.photo = Photo.objects.create(
+            title="Table Photo",
+            raw_image="table-photo.jpg",
+        )
+
+    def get_published_cell(self):
+        record = PhotoListView().get_queryset().get(pk=self.photo.pk)
+        return PhotoTable([record]).rows[0].get_cell("published")
+
+    def test_published_displays_zero_when_no_channels_are_configured(self):
+        self.assertEqual(self.get_published_cell(), "0")
+
+    def test_published_displays_published_and_configured_channel_counts(self):
+        for index in range(5):
+            channel = Channel.objects.create(name=f"Channel {index}")
+            ChannelPhoto.objects.create(
+                channel=channel,
+                photo=self.photo,
+                published=index < 3,
+            )
+
+        self.assertEqual(self.get_published_cell(), "3 / 5")
 
 
 class PhotoFormTests(TestCase):

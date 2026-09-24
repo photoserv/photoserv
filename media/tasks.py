@@ -112,8 +112,6 @@ def post_photo_create(photo_id):
     # Run these synchronously after photo creation
     generate_photo_metadata(photo_id)
     generate_sizes_for_photo(photo_id)
-    photo = models.Photo.objects.get(id=photo_id)
-    photo.update_published(dispatch_signals=True, update_model=True)
     
     return f"Generated sizes, metadata, and calculated publish state for photo {photo_id}."
 

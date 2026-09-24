@@ -6,6 +6,7 @@ from django_tables2.views import SingleTableView
 from django_filters.views import FilterView
 from django_tables2 import SingleTableMixin
 from django.db.models import Count, Q
+from django.utils import timezone
 from .models import *
 from .forms import *
 from .tables import *
@@ -51,6 +52,15 @@ class PhotoDetailView(CRUDGenericMixin, DetailView):
         context['sizes'] = [
             (size, photo_sizes.get(size.id)) for size in all_sizes
         ]
+        channel_photos = {
+            channel_photo.channel_id: channel_photo
+            for channel_photo in ChannelPhoto.objects.filter(photo=self.object)
+        }
+        context['publishing_channels'] = [
+            (channel, channel_photos.get(channel.pk))
+            for channel in Channel.objects.all().order_by('name')
+        ]
+        context['now'] = timezone.now()
         context['custom_attributes'] = json.dumps(self.object.custom_attributes or {}, indent=2)
         return context
 

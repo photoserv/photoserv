@@ -302,12 +302,33 @@ Photo: {{ object }}
     </div>
 
     <div class="box">
-        <h3 class="text-2xl">Integration Info</h3>
+        <h3 class="text-2xl">Publishing Channels</h3>
 
-        <div class="flex justify-center">
-            <a href="{% url 'integration-photo' object.pk %}" class="btn btn-primary">
-                Integration Settings
-            </a>
+        <div class="overflow-x-scroll">
+            <table class="table table-zebra table-auto">
+                <colgroup>
+                    <col class="w-min" />
+                    <col class="w-full whitespace-nowrap" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Channel</th>
+                        <th>Publish Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for channel, channel_photo in publishing_channels %}
+                    <tr>
+                        <td{% if not channel_photo %} class="font-light"{% endif %}>{{ channel.name }}</td>
+                        <td{% if channel_photo.publish_date and channel_photo.publish_date > now %} class="italic"{% endif %}>
+                            {% if channel_photo and channel_photo.publish_date %}
+                            {{ channel_photo.publish_date|date:"Y-m-d H:i" }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

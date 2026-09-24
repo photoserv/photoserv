@@ -22,13 +22,18 @@ class PhotoChannelFormTests(TestCase):
         return values
 
     def test_defaults_to_channel_include_new_photos_and_photo_publish_date(self):
-        form = PhotoChannelForm(photo_instance=self.photo)
+        new_photo = Photo(
+            title='New photo',
+            raw_image='new-photo.jpg',
+            canonical_publish_date=self.publish_date,
+        )
+        form = PhotoChannelForm(photo_instance=new_photo)
 
         self.assertTrue(form[PhotoChannelForm.publish_field_name(self.included)].value())
         self.assertFalse(form[PhotoChannelForm.publish_field_name(self.excluded)].value())
         self.assertEqual(
             form[PhotoChannelForm.date_field_name(self.included)].value(),
-            self.photo.canonical_publish_date.strftime('%Y-%m-%dT%H:%M'),
+            timezone.localtime(self.publish_date).replace(tzinfo=None),
         )
 
     def test_existing_photo_defaults_to_existing_channel_photos(self):
@@ -48,7 +53,10 @@ class PhotoChannelFormTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         form.save(self.photo)
         channel_photo = ChannelPhoto.objects.get(channel=self.included, photo=self.photo)
-        self.assertEqual(channel_photo.publish_date.strftime('%Y-%m-%dT%H:%M'), self.publish_date.strftime('%Y-%m-%dT%H:%M'))
+        self.assertEqual(
+            timezone.localtime(channel_photo.publish_date).strftime('%Y-%m-%dT%H:%M'),
+            self.publish_date.strftime('%Y-%m-%dT%H:%M'),
+        )
 
         changed_date = self.publish_date + timezone.timedelta(days=1)
         form = PhotoChannelForm(self.data(**{
@@ -58,7 +66,9 @@ class PhotoChannelFormTests(TestCase):
         form.save(self.photo)
         self.assertEqual(ChannelPhoto.objects.filter(channel=self.included, photo=self.photo).count(), 1)
         self.assertEqual(
-            ChannelPhoto.objects.get(channel=self.included, photo=self.photo).publish_date.strftime('%Y-%m-%dT%H:%M'),
+            timezone.localtime(
+                ChannelPhoto.objects.get(channel=self.included, photo=self.photo).publish_date
+            ).strftime('%Y-%m-%dT%H:%M'),
             changed_date.strftime('%Y-%m-%dT%H:%M'),
         )
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.10](https://github.com/photoserv/photoserv/compare/0.9.9...0.9.10) (2026-10-01)
+
+
+### Bug Fixes
+
+* Image deprecation notice ([d598792](https://github.com/photoserv/photoserv/commit/d598792caaa4ad22e37f166c58dd12a9c07d6de8))
+
 ## [0.9.9](https://github.com/photoserv/photoserv/compare/0.9.8...0.9.9) (2026-07-11)
 
 

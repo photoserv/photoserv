@@ -1,5 +1,8 @@
 # Photoserv
 
+# THIS REPO IS DEPRECATED  
+# MOVED TO DEVELOPER'S NAMESPACE: [ITSMAXYMOO](https://github.com/itsmaxymoo/photoserv)
+
 Photoserv is an application for photographers, artists, or similar who want a system to act as a single source of truth
 for their publicly published photos.
 
